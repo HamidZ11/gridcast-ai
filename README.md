@@ -1,65 +1,139 @@
 # GridCast AI
 
-A full-stack machine learning platform for short-term UK electricity demand forecasting.
+> AI-powered electricity demand forecasting for Great Britain using machine learning, explainability, and interactive analytics.
+
+<p align="center">
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)]()
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)]()
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)]()
+[![scikit--learn](https://img.shields.io/badge/scikit--learn-ML-orange?logo=scikitlearn)]()
+[![XGBoost](https://img.shields.io/badge/XGBoost-Supported-green)]()
+
+</p>
+
+---
 
 ## Overview
 
-GridCast AI is a portfolio-grade analytics platform for forecasting electricity demand across the next demand cycle. The project combines:
+GridCast AI is a full-stack machine learning application that forecasts short-term electricity demand for Great Britain.
 
-- A polished Next.js frontend dashboard
-- A FastAPI backend service
-- A modular machine learning forecasting pipeline
-- Model insights and explainability views
-- Future integration with real UK electricity demand and weather data
+The project combines a modern analytics dashboard with a production-style FastAPI backend, a modular machine learning pipeline, model explainability using SHAP, and interactive forecasting tools. It was built to demonstrate practical ML engineering rather than notebook-based experimentation.
 
-The goal is to demonstrate practical full-stack ML engineering: product-quality UI, clean API contracts, model architecture, and a realistic path from data ingestion to served forecasts.
+The project focuses on the complete lifecycle of an ML product:
 
-## Current Status
+- data ingestion
+- preprocessing
+- feature engineering
+- model training
+- evaluation
+- explainability
+- API serving
+- interactive frontend visualisation
 
-- Frontend MVP complete with Overview, Forecast Analytics, and Model Insights pages
-- Backend architecture complete
-- `/forecast`, `/history`, `/metrics`, and `/model` now read from processed NESO data and saved model artifacts
-- Real historical demand ingestion pipeline complete
-- Baseline training and first-pass 48-hour inference run from the processed demand dataset
-- Weather and calendar data are still mocked placeholders
+---
 
-The frontend consumes the stable FastAPI contracts. The backend now serves predictions from the selected saved baseline model, while retaining mock fallbacks when local artifacts are unavailable. This is an architectural inference milestone, not a claim of production forecast quality.
+# Dashboard
 
-## Features
+## Overview
 
-### Frontend
+![Overview](public/project_screenshots/Overview.png)
 
-- Demand forecast dashboard
-- KPI cards
+The main dashboard displays live forecasting KPIs, historical demand, 48-hour forecasts and model metadata.
+
+---
+
+## Forecast Analytics
+
+![Forecast Analytics](public/project_screenshots/Forecast.png)
+
+Analyse forecast behaviour through demand decomposition, confidence intervals and probability distributions.
+
+---
+
+## Grid Map
+
+![Grid Map](public/project_screenshots/Grid_Map.png)
+
+Interactive regional demand visualisation across Great Britain with multiple operational layers including:
+
+- Current Demand
+- Forecast Demand
+- Grid Stress
+- Renewable Generation
+
+---
+
+## Scenario Simulator
+
+![Scenario Simulator](public/project_screenshots/Scenarios.png)
+
+Run interactive "what-if" simulations by adjusting demand drivers and immediately generating a new model-backed forecast.
+
+---
+
+## Model Insights
+
+![Model Insights](public/project_screenshots/ModelInsights.png)
+
+Understand why the model produced a prediction using SHAP explainability, feature importance and local prediction contributions.
+
+---
+
+# Key Features
+
+## Frontend
+
+- Modern Next.js App Router architecture
+- Responsive analytics dashboard
+- Interactive demand forecasting
+- Regional electricity demand map
+- Scenario simulator
+- Model explainability views
 - Forecast analytics
-- Model insights
-- Feature importance
-- Prediction explainability
-- Confidence metrics
+- Searchable application navigation
+- Production-style UI using Tailwind CSS and shadcn/ui
 
-### Backend
+## Backend
 
-- FastAPI service
+- FastAPI REST API
 - Typed Pydantic schemas
-- Model-backed forecast, history, metrics, and metadata endpoints with mock fallback
-- Modular ML pipeline structure
-- Swappable model interface
-- Configuration management
-- Historical demand CSV ingestion
-- Data profiling and validation
-- Feature-engineered training dataset export
+- Modular service architecture
+- Model-backed forecasting endpoints
+- SHAP explainability endpoints
+- Model metadata endpoints
+- Historical demand API
+- Confidence interval generation
+- Scenario simulation engine
 
-## Tech Stack
+## Machine Learning
 
-### Frontend
+- Historical NESO demand ingestion
+- Data validation pipeline
+- Feature engineering
+- Time-series forecasting
+- Model comparison
+- Recursive multi-step forecasting
+- SHAP feature importance
+- Local prediction explanations
+- Artifact loading
+- Automatic fallback handling
+
+---
+
+# Tech Stack
+
+## Frontend
 
 - Next.js
+- React
 - TypeScript
 - Tailwind CSS
 - shadcn/ui
 - Recharts
 
-### Backend
+## Backend
 
 - FastAPI
 - Python
@@ -68,26 +142,29 @@ The frontend consumes the stable FastAPI contracts. The backend now serves predi
 - scikit-learn
 - XGBoost
 - SHAP
+- Pydantic
 
-## Project Structure
+---
+
+# Project Structure
 
 ```text
 gridcast-ai/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx
-│   │   ├── forecast/
-│   │   └── model-insights/
 │   ├── components/
+│   ├── lib/
 │   └── data/
+│
 ├── backend/
 │   ├── app/
 │   │   ├── api/
 │   │   ├── core/
 │   │   ├── models/
-│   │   ├── services/
 │   │   ├── schemas/
+│   │   ├── services/
 │   │   └── main.py
+│   │
 │   ├── ml/
 │   │   ├── ingestion/
 │   │   ├── preprocessing/
@@ -97,275 +174,253 @@ gridcast-ai/
 │   │   ├── inference/
 │   │   ├── evaluation/
 │   │   └── explainability/
+│   │
+│   ├── tests/
 │   ├── data/
-│   │   ├── raw/
-│   │   └── processed/
-│   ├── notebooks/
-│   └── tests/
+│   └── models/
+│
 ├── public/
 ├── README.md
 ├── PROJECT_CONTEXT.md
 └── ROADMAP.md
 ```
 
-## Running Locally
+---
 
-### Frontend
+# Application Architecture
+
+```
+NESO Historic Demand Data
+            │
+            ▼
+     Data Validation
+            │
+            ▼
+   Feature Engineering
+            │
+            ▼
+   Model Training Pipeline
+            │
+            ▼
+     Saved ML Artifacts
+            │
+            ▼
+      FastAPI Backend
+            │
+            ▼
+     REST API Endpoints
+            │
+            ▼
+     Next.js Dashboard
+```
+
+---
+
+# Machine Learning Pipeline
+
+GridCast AI follows a modular forecasting pipeline.
+
+1. Load historical electricity demand
+2. Validate raw data
+3. Clean timestamps
+4. Generate calendar features
+5. Generate lag features
+6. Generate rolling statistics
+7. Train baseline models
+8. Compare model performance
+9. Save trained artifacts
+10. Serve forecasts through FastAPI
+11. Generate SHAP explanations
+12. Display results inside the dashboard
+
+Current baseline models include:
+
+- Linear Regression
+- Random Forest
+- XGBoost
+
+Evaluation metrics:
+
+- MAE
+- RMSE
+- MAPE
+- R²
+
+---
+
+# Explainability
+
+GridCast AI includes model explainability using SHAP.
+
+Features include:
+
+- Global feature importance
+- Local prediction explanations
+- Waterfall contribution charts
+- Mean absolute SHAP importance
+- Cached explainability
+- Automatic explainer selection
+
+Supported explainers:
+
+- LinearExplainer
+- TreeExplainer
+- Permutation fallback
+
+---
+
+# Dataset
+
+Current forecasting uses:
+
+**National Energy System Operator (NESO)**
+
+Historic Demand Data 2024
+
+Features include:
+
+- National Demand
+- Transmission System Demand
+- England & Wales Demand
+- Settlement periods
+- Half-hour timestamps
+
+Engineered features include:
+
+- Hour
+- Day
+- Month
+- Day of week
+- Weekend flag
+- Lag demand
+- Rolling averages
+
+---
+
+# API Endpoints
+
+| Endpoint | Description |
+|-----------|-------------|
+| GET /health | Health check |
+| GET /forecast | 48-hour demand forecast |
+| POST /simulate | Scenario simulation |
+| GET /history | Historical demand |
+| GET /metrics | Model metrics |
+| GET /feature-importance | SHAP feature importance |
+| GET /explain | Local SHAP explanation |
+| GET /model | Model metadata |
+
+---
+
+# Running Locally
+
+## Frontend
 
 ```bash
 npm install
+
 npm run dev
 ```
 
-The frontend is expected to run on `http://localhost:3001` during local GridCast AI development. Next.js may use another available port if `3001` is occupied.
+By default:
 
-Create a local environment file if you need to override the backend URL:
+```
+http://localhost:3000
+```
 
-```bash
+Optional environment variable:
+
+```env
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8001
 ```
 
-### Backend
+---
+
+## Backend
 
 ```bash
 cd backend
+
 python -m venv .venv
+
 source .venv/bin/activate
+
 pip install -r requirements.txt
+
 uvicorn app.main:app --reload --port 8001
 ```
 
-The backend API will be available at `http://127.0.0.1:8001`.
+Backend:
 
-## API Endpoints
-
-Current API endpoints:
-
-- `GET /health`
-- `GET /forecast` - 96 model-generated half-hourly points
-- `POST /simulate` - model-backed 48-hour what-if scenario forecast
-- `GET /history` - recent processed NESO observations
-- `GET /metrics` - saved validation metrics
-- `GET /feature-importance` - active estimator importance values
-- `GET /explain` - cached local SHAP explanation for a forecast point
-- `GET /model` - saved model metadata, comparison metrics, features, and limitations
-
-Model-backed payloads identify themselves with `data_source: "artifact"`; fallback payloads use `data_source: "fallback"`. This prevents the frontend from displaying fallback model names or metrics as if they were production artifacts.
-
-## Dataset
-
-Phase 7A selected the preferred UK demand source for future GridCast AI model work:
-
-- Source: National Energy System Operator (NESO) Open Data Portal
-- Dataset title: `Historic Demand Data`
-- Portal URL: `https://www.neso.energy/data-portal/historic-demand-data`
-- Metadata API: `https://api.neso.energy/api/3/action/package_show?id=historic-demand-data`
-- Selected raw file for discovery: `Historic Demand Data 2024`
-- Download URL: `https://api.neso.energy/dataset/8f2fe0af-871c-488d-8bad-960426f24601/resource/f6d02c0f-957b-48cb-82ee-09003f2ba759/download/demanddata_2024.csv`
-- License: NESO Open Data Licence
-- License URL: `https://www.neso.energy/data-portal/ngeso-open-licence`
-- Update cadence: populated 21 days in arrears, with possible retrospective corrections
-- Raw file location: `backend/data/raw/neso_historic_demand_2024.csv`
-- Initial forecasting target: `ND`, renamed internally to `demand`
-
-The selected NESO file is a static annual CSV with half-hourly settlement-period demand data. It includes `SETTLEMENT_DATE`, `SETTLEMENT_PERIOD`, `ND` (National Demand), `TSD` (Transmission System Demand), and `ENGLAND_WALES_DEMAND`.
-
-Timestamp construction:
-
-- `SETTLEMENT_PERIOD = 1` maps to `00:00`
-- `SETTLEMENT_PERIOD = 2` maps to `00:30`
-- `SETTLEMENT_PERIOD = 48` maps to `23:30`
-- The model-ready dataset is reindexed onto a continuous 30-minute grid.
-- Clock-change settlement periods outside the model-ready `1-48` convention are not written to the raw file; the processed table is normalized for regular ML features.
-
-Profile the selected raw dataset:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m ml.ingestion.profile_dataset
+```
+http://127.0.0.1:8001
 ```
 
-The profiler writes:
+---
 
-- `backend/data/processed/profile.json`
+# Current Capabilities
 
-Processed training output:
+✅ Full-stack web application
 
-- Output path: `backend/data/processed/training_dataset.csv`
-- Target column: `demand`
-- Retained demand context columns: `TSD`, `ENGLAND_WALES_DEMAND`
-- Half-hourly lags: `demand_lag_1`, `demand_lag_48`, `demand_lag_336`
-- Half-hourly rolling features: `demand_rolling_3`, `demand_rolling_48`, `demand_rolling_336`
+✅ Machine learning forecasting pipeline
 
-Generate the processed dataset:
+✅ Interactive analytics dashboard
 
-```bash
-cd backend
-source .venv/bin/activate
-python -m ml.pipeline
-```
+✅ Regional electricity demand mapping
 
-The baseline training workflow excludes retained demand context columns from model features to avoid target leakage.
+✅ Scenario simulation
 
-### Baseline Training
+✅ SHAP explainability
 
-Phase 7C trains baseline models on the processed NESO dataset:
+✅ Production-style REST API
 
-```bash
-cd backend
-source .venv/bin/activate
-python -m ml.training.train
-```
+✅ Responsive UI
 
-Training input:
+✅ Model metadata
 
-- `backend/data/processed/training_dataset.csv`
+✅ Feature importance
 
-Target:
+✅ Confidence intervals
 
-- `demand` (mapped from NESO `ND`)
+✅ Historical demand visualisation
 
-Feature columns:
+---
 
-- `hour`
-- `day`
-- `month`
-- `day_of_week`
-- `is_weekend`
-- `demand_lag_1`
-- `demand_lag_48`
-- `demand_lag_336`
-- `demand_rolling_3`
-- `demand_rolling_48`
-- `demand_rolling_336`
+# Current Limitations
 
-Excluded from training features:
+This project intentionally keeps several areas modular for future expansion.
 
-- `timestamp`
-- `demand`
-- `TSD`
-- `ENGLAND_WALES_DEMAND`
-- non-numeric columns
-- leakage or target-derived columns
+Current limitations include:
 
-Models compared:
+- Weather features are currently mocked
+- Holiday and event effects are minimal
+- Confidence intervals use RMSE approximation
+- Recursive forecasting only
+- Additional model experimentation is ongoing
 
-- Linear Regression
-- Random Forest Regressor
-- XGBoost Regressor, if the local runtime can load XGBoost dependencies
+---
 
-Metrics:
+# Future Improvements
 
-- MAE: average absolute forecast error in MW
-- RMSE: root mean squared forecast error in MW, more sensitive to large misses
-- MAPE: percentage error relative to actual demand
-- R²: variance explained by the model
+Potential future work:
 
-Artifacts:
+- Live NESO API integration
+- Live weather ingestion
+- Probabilistic forecasting
+- Transformer-based forecasting
+- LSTM comparison
+- Rolling-origin backtesting
+- Docker deployment
+- CI/CD pipeline
+- Authentication
+- User workspaces
 
-- `backend/models/model.pkl`
-- `backend/models/model_metadata.json`
+---
 
-Current limitations:
+# Portfolio Purpose
 
-- Weather features are not included yet.
-- Calendar features are basic engineered time fields only.
-- Training currently uses a simple chronological 80/20 split, not rolling-origin backtesting.
+GridCast AI was built as an end-to-end machine learning engineering project.
 
-### Model Inference
+Rather than focusing solely on model accuracy, the project demonstrates the broader engineering required to deliver ML systems as usable software, including data pipelines, model serving, explainability, backend architecture, API design and a polished frontend experience.
 
-After generating the processed dataset and training the baselines:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m ml.pipeline
-python -m ml.training.train
-uvicorn app.main:app --reload --port 8001
-```
-
-The API loads `backend/models/model.pkl`, its metadata, and the latest processed feature row. It creates 96 half-hourly timestamps, updates calendar fields, predicts demand in MW, and returns GW values through the existing `/forecast` contract.
-
-Forecast inference begins 30 minutes after the latest dataset observation and
-runs recursively for 96 steps. Every prediction updates the in-memory lag and
-rolling-demand windows used by the next step. Weather is not included, and the
-90% confidence interval remains an RMSE-based approximation rather than a
-horizon-specific calibration.
-
-Feature importance now comes from normalized mean absolute SHAP values. Local
-forecast explanations use `LinearExplainer` for linear models, `TreeExplainer`
-for tree models, and a permutation fallback for other compatible estimators.
-Native coefficients or estimator importances remain the fallback if global
-SHAP calculation is unavailable. Explanations are cached against the active
-model artifact signature.
-
-Previous fallback work used the Open Power System Data hourly time-series package:
-
-- Source: Open Power System Data, `time_series_60min_singleindex.csv`
-- Package version: `2020-10-06`
-- DOI: `https://doi.org/10.25832/time_series/2020-10-06`
-- Homepage: `https://data.open-power-system-data.org/time_series/2020-10-06`
-- Demand column: `GB_UKM_load_actual_entsoe_transparency`
-- Timestamp column: `utc_timestamp`
-
-OPSD remains useful as a fallback/reference dataset, but NESO Historic Demand Data is now the preferred source for UK demand model development.
-
-The OPSD datapackage metadata available during implementation did not declare a redistribution license in `datapackage.json`; verify licensing before redistributing the raw file. The repository ignores raw and processed data artifacts so large datasets are not committed.
-
-### Download
-
-```bash
-curl -L -o backend/data/raw/opsd_time_series_60min_singleindex.csv \
-  https://data.open-power-system-data.org/time_series/2020-10-06/time_series_60min_singleindex.csv
-```
-
-Expected locations:
-
-- Raw source CSV: `backend/data/raw/opsd_time_series_60min_singleindex.csv`
-- Profile output: `backend/data/processed/profile.json`
-- Training dataset output: `backend/data/processed/training_dataset.csv`
-
-### Data Pipeline
-
-Run the ingestion and feature pipeline:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m ml.pipeline
-```
-
-Pipeline order:
-
-1. Load the raw OPSD CSV
-2. Validate required source columns
-3. Parse UTC timestamps
-4. Sort chronologically
-5. Remove duplicate timestamps
-6. Fill missing demand values conservatively
-7. Generate a profile report
-8. Validate chronology, nulls, duplicates, intervals, and invalid demand values
-9. Add mocked weather and calendar placeholders
-10. Generate time features, lag features, and rolling averages
-11. Save `backend/data/processed/training_dataset.csv`
-
-## Machine Learning Plan
-
-Planned pipeline:
-
-1. Load historical electricity demand data
-2. Clean timestamps and missing values
-3. Merge weather data
-4. Generate time features
-5. Generate lag features
-6. Generate rolling averages
-7. Train baseline models
-8. Compare Linear Regression, Random Forest, and XGBoost
-9. Evaluate using MAE, RMSE, MAPE, and R²
-10. Serve forecasts through FastAPI
-11. Serve cached SHAP feature importance and local forecast explanations
-
-## Portfolio Purpose
-
-GridCast AI is designed to show practical full-stack machine learning engineering, not just notebook-based modelling. It demonstrates how a forecasting product can be structured across frontend experience, backend API contracts, data pipelines, model interfaces, evaluation, and explainability.
+The goal is to showcase practical full-stack software engineering and machine learning skills in a production-inspired application.

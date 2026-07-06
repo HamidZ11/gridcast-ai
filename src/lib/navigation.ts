@@ -29,19 +29,19 @@ export const navigationSections: NavigationSection[] = [
       {
         label: "Overview",
         icon: Gauge,
-        href: "/",
+        href: "/dashboard",
         keywords: ["dashboard", "home", "demand", "kpi"],
       },
       {
         label: "Forecasts",
         icon: Activity,
-        href: "/forecast",
+        href: "/dashboard/forecast",
         keywords: ["analytics", "demand forecast", "heatmap", "decomposition"],
       },
       {
         label: "AI Insights",
         icon: BrainCircuit,
-        href: "/model-insights",
+        href: "/dashboard/model-insights",
         keywords: ["model", "machine learning", "shap", "explainability"],
       },
     ],
@@ -52,19 +52,19 @@ export const navigationSections: NavigationSection[] = [
       {
         label: "Grid Map",
         icon: Bolt,
-        href: "/grid-map",
+        href: "/dashboard/grid-map",
         keywords: ["regions", "regional demand", "map", "telemetry"],
       },
       {
         label: "Scenarios",
         icon: BarChart3,
-        href: "/scenarios",
+        href: "/dashboard/scenarios",
         keywords: ["simulation", "what if", "temperature", "demand"],
       },
       {
         label: "Schedules",
         icon: CalendarClock,
-        href: "/schedules",
+        href: "/dashboard/schedules",
         keywords: ["jobs", "training", "refresh", "operations"],
       },
     ],
@@ -74,7 +74,7 @@ export const navigationSections: NavigationSection[] = [
 export const aboutNavigationItem: NavigationItem = {
   label: "About",
   icon: Info,
-  href: "/about",
+  href: "/dashboard/about",
   keywords: ["project", "technology", "system", "documentation"],
 }
 
@@ -83,7 +83,7 @@ export const searchNavigationItems: NavigationItem[] = [
   {
     label: "Grid Signals",
     icon: RadioTower,
-    href: "/grid-map",
+    href: "/dashboard/grid-map",
     keywords: ["grid map", "telemetry", "signals", "regional"],
   },
   aboutNavigationItem,

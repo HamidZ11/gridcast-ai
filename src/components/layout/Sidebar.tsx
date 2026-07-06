@@ -4,10 +4,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { ComponentType } from "react"
 import {
-  Bolt,
+  ArrowLeft,
   PanelLeftClose,
   PanelLeftOpen,
-  RadioTower,
 } from "lucide-react"
 
 import { aboutNavigationItem, navigationSections } from "@/lib/navigation"
@@ -43,20 +42,29 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollapse
         )}
       >
         <div className="group/header flex min-h-10 items-center justify-between gap-2 transition-[min-height] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid size-9 shrink-0 place-items-center rounded-[14px] bg-[#0F172A] shadow-[0_14px_28px_rgba(15,23,42,0.18)]">
-              <Bolt className="size-4.5 text-white" />
-            </div>
-            <div
+          <div
+            className={cn(
+              "relative h-5 min-w-0 overflow-hidden transition-[width] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+              collapsed ? "w-7" : "w-[126px]"
+            )}
+          >
+            <p
               className={cn(
-                "min-w-0 overflow-hidden transition-[max-width,opacity,transform] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                collapsed
-                  ? "max-w-0 -translate-x-1 opacity-0"
-                  : "max-w-[126px] translate-x-0 opacity-100 delay-100"
+                "absolute inset-0 whitespace-nowrap text-[14px] font-semibold leading-5 tracking-tight text-[#0F172A] transition-[opacity,transform] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                collapsed ? "-translate-x-1 opacity-0" : "translate-x-0 opacity-100 delay-100"
               )}
             >
-              <p className="truncate text-[14px] font-semibold leading-5 tracking-tight text-[#0F172A]">GridCast AI</p>
-            </div>
+              GridCast AI
+            </p>
+            <p
+              aria-label="GridCast AI"
+              className={cn(
+                "absolute inset-0 text-center text-[13px] font-bold leading-5 tracking-tight text-[#0F172A] transition-[opacity,transform] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                collapsed ? "translate-x-0 opacity-100 delay-100" : "translate-x-1 opacity-0"
+              )}
+            >
+              GC
+            </p>
           </div>
 
           <button
@@ -94,7 +102,11 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollapse
                 {section.items.map((item) => (
                   <SidebarLink
                     key={item.label}
-                    active={item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)}
+                    active={
+                      item.href === "/dashboard"
+                        ? pathname === "/dashboard"
+                        : pathname.startsWith(item.href)
+                    }
                     collapsed={collapsed}
                     href={item.href}
                     icon={item.icon}
@@ -109,7 +121,7 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollapse
 
         <LiveFeed collapsed={collapsed} />
 
-        <div className="mt-auto pt-7">
+        <div className="mt-auto space-y-2 pt-6">
           <SidebarLink
             active={pathname.startsWith(aboutNavigationItem.href)}
             collapsed={collapsed}
@@ -118,6 +130,7 @@ export function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggleCollapse
             label={aboutNavigationItem.label}
             onNavigate={onCloseMobile}
           />
+          <BackToLanding collapsed={collapsed} onNavigate={onCloseMobile} />
         </div>
       </aside>
     </>
@@ -170,20 +183,42 @@ function LiveFeed({ collapsed }: { collapsed: boolean }) {
         "origin-top overflow-hidden rounded-[18px] border border-[#E8EDF5] bg-[#F8FAFD] shadow-[0_14px_30px_rgba(15,23,42,0.035)] transition-[opacity,max-height,padding,margin,transform,border-color] duration-[320ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
         collapsed
           ? "mt-0 max-h-0 scale-[0.96] -translate-y-1 border-transparent p-0 opacity-0"
-          : "mt-7 max-h-40 scale-100 translate-y-0 p-3.5 opacity-100 delay-100"
+          : "mt-6 max-h-32 scale-100 translate-y-0 px-3 py-2.5 opacity-100 delay-100"
       )}
       aria-hidden={collapsed}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">Live Feed</p>
-        <span className="size-2 rounded-full bg-[#10B981] shadow-[0_0_0_5px_rgba(16,185,129,0.11)]" />
+      <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">Live Feed</p>
+      <div className="mt-1.5 flex items-center gap-1.5">
+        <span className="size-1.5 shrink-0 rounded-full bg-[#10B981]" />
+        <p className="text-[11px] font-semibold text-[#334155]">Connected</p>
       </div>
-      <div className="mt-2.5 flex items-start gap-2">
-        <RadioTower className="mt-0.5 size-4 shrink-0 text-[#64748B]" />
-        <p className="text-[12px] font-medium leading-5 text-[#0F172A]">
-          National Grid ESO demand signal refreshed at 12:05 UTC.
-        </p>
-      </div>
+      <p className="mt-1.5 text-[11px] font-medium text-[#0F172A]">National Grid ESO</p>
+      <p className="mt-0.5 text-[10px] font-medium text-[#94A3B8]">Updated 12:05 UTC</p>
     </div>
+  )
+}
+
+function BackToLanding({ collapsed, onNavigate }: { collapsed: boolean; onNavigate: () => void }) {
+  return (
+    <Link
+      href="/"
+      aria-label="Back to landing page"
+      title={collapsed ? "Back to landing page" : undefined}
+      onClick={onNavigate}
+      className={cn(
+        "flex h-8 items-center text-[11px] font-medium text-[#94A3B8] transition-colors duration-200 hover:text-[#475569] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
+        collapsed ? "justify-center" : "gap-1.5 px-2.5"
+      )}
+    >
+      <ArrowLeft className="size-3.5 shrink-0" />
+      <span
+        className={cn(
+          "overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-[240ms] ease-out",
+          collapsed ? "max-w-0 opacity-0" : "max-w-[130px] opacity-100 delay-100"
+        )}
+      >
+        Back to landing page
+      </span>
+    </Link>
   )
 }

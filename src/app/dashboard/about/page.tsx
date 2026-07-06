@@ -188,13 +188,30 @@ export default async function AboutPage() {
             {[
               { icon: BookOpen, label: "README", value: "README.md" },
               { icon: Database, label: "Documentation", value: "PROJECT_CONTEXT.md · ROADMAP.md" },
-              { icon: Server, label: "GitHub repository", value: "Remote repository not configured" },
+              {
+                icon: Server,
+                label: "GitHub repository",
+                value: "github.com/HamidZ11/gridcast-ai",
+                href: "https://github.com/HamidZ11/gridcast-ai",
+              },
             ].map((resource) => (
               <div key={resource.label} className="flex items-start gap-3 rounded-[15px] border border-[#E8EDF5] bg-[#F8FAFD] p-3.5">
                 <resource.icon className="mt-0.5 size-3.5 shrink-0 text-[#64748B]" />
                 <div>
                   <p className="text-[11px] font-semibold text-[#334155]">{resource.label}</p>
-                  <p className="mt-1 text-[11px] font-medium leading-4 text-[#94A3B8]">{resource.value}</p>
+                  {resource.href ? (
+                    <a
+                      href={resource.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium leading-4 text-[#2563EB] hover:underline"
+                    >
+                      {resource.value}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-[11px] font-medium leading-4 text-[#94A3B8]">{resource.value}</p>
+                  )}
                 </div>
               </div>
             ))}

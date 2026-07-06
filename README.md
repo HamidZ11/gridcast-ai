@@ -34,6 +34,18 @@ The project focuses on the complete lifecycle of an ML product:
 
 ---
 
+## Current Status
+
+- Public engineering-case-study landing page available at `/`
+- Dashboard application available under `/dashboard`, including Overview, Forecast Analytics, Model Insights, Grid Map, Scenarios, and Schedules
+- Backend architecture complete
+- `/forecast`, `/history`, `/metrics`, and `/model` now read from processed NESO data and saved model artifacts
+- Real historical demand ingestion pipeline complete
+- Baseline training and first-pass 48-hour inference run from the processed demand dataset
+- Weather and calendar data are still mocked placeholders
+
+---
+
 # Dashboard
 
 ## Overview

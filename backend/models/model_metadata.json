@@ -1,0 +1,47 @@
+{
+  "model_name": "Linear Regression",
+  "training_timestamp": "2026-06-26T14:51:52.212563+00:00",
+  "dataset": "NESO Historic Demand Data 2024",
+  "target": "ND / demand",
+  "row_count": 17232,
+  "metrics": {
+    "mae": 385.74935478020075,
+    "rmse": 492.0337404419855,
+    "mape": 1.3589508228085907,
+    "r2": 0.9936485819787304
+  },
+  "all_model_metrics": {
+    "Linear Regression": {
+      "mae": 385.74935478020075,
+      "rmse": 492.0337404419855,
+      "mape": 1.3589508228085907,
+      "r2": 0.9936485819787304
+    },
+    "Random Forest Regressor": {
+      "mae": 374.35927215945713,
+      "rmse": 492.18011326357015,
+      "mape": 1.2889088460136386,
+      "r2": 0.9936448025092236
+    }
+  },
+  "feature_columns": [
+    "hour",
+    "day",
+    "month",
+    "day_of_week",
+    "is_weekend",
+    "demand_lag_1",
+    "demand_lag_48",
+    "demand_lag_336",
+    "demand_rolling_3",
+    "demand_rolling_48",
+    "demand_rolling_336"
+  ],
+  "training_rows": 13785,
+  "test_rows": 3447,
+  "notes": [
+    "Baseline model trained on engineered demand/time features only.",
+    "Weather features are not yet included.",
+    "TSD and ENGLAND_WALES_DEMAND are excluded to avoid target leakage."
+  ]
+}

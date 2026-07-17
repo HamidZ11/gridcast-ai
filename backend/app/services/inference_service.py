@@ -28,13 +28,9 @@ from app.services.mock_data_service import (
     get_metrics as get_mock_metrics,
     get_model_info as get_mock_model_info,
 )
-from ml.inference.model_loader import (
-    ModelMetadataPayload,
-    load_model,
-    load_model_metadata,
-)
+from app.services.model_cache import get_cached_metadata, get_cached_model
+from ml.inference.model_loader import ModelMetadataPayload
 from ml.inference.predict import predict_demand, recursive_forecast
-from ml.explainability.explainer import mean_absolute_shap_values
 
 LOGGER = logging.getLogger(__name__)
 FORECAST_PERIODS = 96
@@ -124,8 +120,8 @@ def get_forecast(
         resolved_model_path = model_path or settings.model_artifact_path
         resolved_metadata_path = metadata_path or settings.model_metadata_path
         resolved_dataset_path = dataset_path or settings.training_dataset_path
-        model = load_model(resolved_model_path)
-        metadata = load_model_metadata(resolved_metadata_path)
+        model = get_cached_model(model_path)
+        metadata = get_cached_metadata(metadata_path)
         data = _load_processed_data(resolved_dataset_path)
         timestamps, predictions_mw, _ = recursive_forecast(
             model,
@@ -185,7 +181,7 @@ def get_history(dataset_path: Path | None = None) -> HistoryResponse:
 def get_metrics(metadata_path: Path | None = None) -> MetricsResponse:
     """Return saved validation metrics in frontend-compatible units."""
     try:
-        metadata = load_model_metadata(metadata_path or settings.model_metadata_path)
+        metadata = get_cached_metadata(metadata_path)
         metrics = metadata["metrics"]
         return MetricsResponse(
             model_name=metadata["model_name"],
@@ -214,7 +210,7 @@ def get_metrics(metadata_path: Path | None = None) -> MetricsResponse:
 def get_model_info(metadata_path: Path | None = None) -> ModelInfoResponse:
     """Return production model information sourced from saved metadata."""
     try:
-        metadata = load_model_metadata(metadata_path or settings.model_metadata_path)
+        metadata = get_cached_metadata(metadata_path)
         limitations = [
             *metadata["notes"],
             "Forecast inference recursively updates lag and rolling-demand features from prior predictions.",
@@ -255,14 +251,16 @@ def get_feature_importance(
     metadata_path: Path | None = None,
     dataset_path: Path | None = None,
 ) -> FeatureImportanceResponse:
-    """Return SHAP mean absolute importance with native-model fallback."""
+    """Return feature importance, preferring SHAP when available."""
     try:
         resolved_model_path = model_path or settings.model_artifact_path
-        model = load_model(resolved_model_path)
-        metadata = load_model_metadata(metadata_path or settings.model_metadata_path)
+        model = get_cached_model(model_path)
+        metadata = get_cached_metadata(metadata_path)
         method = "mean_absolute_shap"
 
         try:
+            from ml.explainability.explainer import mean_absolute_shap_values
+
             data = _load_processed_data(dataset_path or settings.training_dataset_path)
             shap_importance = mean_absolute_shap_values(
                 resolved_model_path,

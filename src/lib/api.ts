@@ -11,7 +11,18 @@ import type {
   SimulationResponse,
 } from "@/types/api"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8001"
+function resolveApiBaseUrl(): string {
+  const configuredUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  if (configuredUrl) return configuredUrl
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_API_BASE_URL must be set for production builds.")
+  }
+
+  return "http://127.0.0.1:8001"
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 
 type Validator<T> = (value: unknown) => value is T
 

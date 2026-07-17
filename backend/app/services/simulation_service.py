@@ -25,7 +25,7 @@ from app.services.inference_service import (
     _load_processed_data,
     get_forecast,
 )
-from ml.inference.model_loader import load_model, load_model_metadata
+from app.services.model_cache import get_cached_metadata, get_cached_model
 from ml.inference.predict import predict_demand
 
 LOGGER = logging.getLogger(__name__)
@@ -320,8 +320,8 @@ def simulate_scenario(
 ) -> SimulationResponse:
     """Run a 48-hour scenario through the active trained model."""
     try:
-        model = load_model(model_path or settings.model_artifact_path)
-        metadata = load_model_metadata(metadata_path or settings.model_metadata_path)
+        model = get_cached_model(model_path)
+        metadata = get_cached_metadata(metadata_path)
         data = _load_processed_data(dataset_path or settings.training_dataset_path)
         timestamps, baseline_features = _build_future_features(
             data, metadata["feature_columns"]

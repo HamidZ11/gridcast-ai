@@ -13,8 +13,7 @@ from app.services.inference_service import (
     MW_PER_GW,
     _load_processed_data,
 )
-from ml.explainability.explainer import explain_prediction
-from ml.inference.model_loader import load_model, load_model_metadata
+from app.services.model_cache import get_cached_metadata, get_cached_model
 from ml.inference.predict import recursive_forecast
 
 
@@ -59,8 +58,8 @@ def get_prediction_explanation(
     """Explain one point from the current 48-hour production forecast."""
     try:
         resolved_model_path = model_path or settings.model_artifact_path
-        model = load_model(resolved_model_path)
-        metadata = load_model_metadata(metadata_path or settings.model_metadata_path)
+        model = get_cached_model(model_path)
+        metadata = get_cached_metadata(metadata_path)
         data = _load_processed_data(dataset_path or settings.training_dataset_path)
         feature_columns = metadata["feature_columns"]
         timestamps, predictions, future_features = recursive_forecast(
@@ -76,6 +75,13 @@ def get_prediction_explanation(
             timestamp,
         )
         background = data[feature_columns]
+        try:
+            from ml.explainability.explainer import explain_prediction
+        except ImportError as error:
+            raise ExplainabilityUnavailableError(
+                "Explainability is disabled in this deployment."
+            ) from error
+
         explanation = explain_prediction(
             resolved_model_path,
             model,

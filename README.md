@@ -9,7 +9,6 @@
 [![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)]()
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)]()
 [![scikit--learn](https://img.shields.io/badge/scikit--learn-ML-orange?logo=scikitlearn)]()
-[![XGBoost](https://img.shields.io/badge/XGBoost-Supported-green)]()
 
 </p>
 
@@ -54,7 +53,7 @@ The project focuses on the complete lifecycle of an ML product:
 
 ![Overview](public/project_screenshots/Overview.png)
 
-The main dashboard displays live forecasting KPIs, historical demand, 48-hour forecasts and model metadata.
+The main dashboard shows the latest observed demand, the model's 48-hour forecast, held-out accuracy and model metadata. Figures come from the saved artifact and the NESO 2024 record — there is no live feed.
 
 ---
 
@@ -154,7 +153,6 @@ Understand why the model produced a prediction using SHAP explainability, featur
 - pandas
 - NumPy
 - scikit-learn
-- XGBoost
 - SHAP
 - Pydantic
 
@@ -247,11 +245,13 @@ GridCast AI follows a modular forecasting pipeline.
 11. Generate SHAP explanations
 12. Display results inside the dashboard
 
-Current baseline models include:
+Trained and evaluated baselines (both present in the saved metadata):
 
-- Linear Regression
-- Random Forest
-- XGBoost
+- Linear Regression — the active saved artifact
+- Random Forest Regressor
+
+XGBoost is supported by the training code but is not installed or trained in
+this deployment, so it does not appear on the leaderboard.
 
 Evaluation metrics:
 

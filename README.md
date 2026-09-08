@@ -492,6 +492,15 @@ Potential future work:
 
 ---
 
+# Deployment
+
+Vercel deploys the frontend and Render deploys the backend, both from `main`.
+**Pushing `main` always deploys the frontend**, whether or not Render's
+Auto-Deploy is on. Sequence, required environment variables and post-release
+checks: [DEPLOYMENT.md](DEPLOYMENT.md).
+
+---
+
 # Rolling back a release
 
 `main` is deployed from, so roll back by adding a commit, never by rewriting

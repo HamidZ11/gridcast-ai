@@ -57,7 +57,7 @@ export default async function SchedulesPage() {
             title="Model operations"
             note="Start times come from the backend where a real artifact records one; the rest are placeholders."
           />
-          <div className="gc-scroll-x">
+          <div className="gc-scroll-x" tabIndex={0} role="region" aria-label="Model operations queue, scrollable">
             <table className="w-full min-w-[760px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-[var(--gc-rule-strong)]">

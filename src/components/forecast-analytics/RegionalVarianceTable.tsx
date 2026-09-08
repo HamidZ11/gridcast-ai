@@ -18,7 +18,7 @@ export function RegionalVarianceTable({ rows }: RegionalVarianceTableProps) {
           </ProvenanceTag>
         }
       />
-      <div className="gc-scroll-x">
+      <div className="gc-scroll-x" tabIndex={0} role="region" aria-label="Regional load deviation, scrollable">
         <table className="w-full min-w-[440px] border-collapse text-left">
           <thead>
             <tr className="border-b border-[var(--gc-rule-strong)]">

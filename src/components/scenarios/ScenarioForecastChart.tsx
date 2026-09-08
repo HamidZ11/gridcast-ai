@@ -89,7 +89,7 @@ export function ScenarioForecastChart({
           </div>
         }
       />
-      <div className="gc-scroll-x px-1 pt-3 sm:px-3">
+      <div className="gc-scroll-x px-1 pt-3 sm:px-3" tabIndex={0} role="region" aria-label="Scenario simulation chart, scrollable">
         <p className="pl-2 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">GW</p>
         <div className="h-[340px] min-w-[540px]">
           <ResponsiveContainer width="100%" height="100%">

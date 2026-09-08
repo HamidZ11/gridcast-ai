@@ -57,7 +57,7 @@ export function FeatureImportanceChart({ data, method }: FeatureImportanceChartP
         <Note className="px-4 py-6">Feature influence is unavailable for the active model.</Note>
       ) : (
         <>
-          <div className="gc-scroll-x px-1 pt-3 sm:px-3">
+          <div className="gc-scroll-x px-1 pt-3 sm:px-3" tabIndex={0} role="region" aria-label="Feature influence chart, scrollable">
             <div className="h-[320px] min-w-[500px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} layout="vertical" margin={{ top: 4, right: 44, left: 4, bottom: 4 }}>

@@ -197,7 +197,7 @@ export function ForecastChart({
           </Note>
         </div>
       ) : (
-      <div className="gc-scroll-x px-1 pb-1 pt-3 sm:px-3">
+      <div className="gc-scroll-x px-1 pb-1 pt-3 sm:px-3" tabIndex={0} role="region" aria-label="Demand and forecast chart, scrollable">
         <p className="pl-2 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">GW</p>
         <div className="h-[400px] min-w-[560px]">
           <ResponsiveContainer width="100%" height="100%">

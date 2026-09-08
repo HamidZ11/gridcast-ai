@@ -48,7 +48,7 @@ export function DemandHeatmap({ data }: DemandHeatmapProps) {
           </div>
         }
       />
-      <div className="gc-scroll-x p-4">
+      <div className="gc-scroll-x p-4" tabIndex={0} role="region" aria-label="Demand intensity heatmap, scrollable">
         <table className="w-full min-w-[760px] border-collapse">
           <caption className="sr-only">
             Relative demand intensity for each hour of each weekday, as a percentage of the weekly

@@ -91,16 +91,14 @@ export function AppSearch() {
   }
 
   return (
-    <div ref={containerRef} className="relative min-w-0 md:w-[360px]">
+    <div ref={containerRef} className="relative min-w-0 md:w-[300px]">
       <div
         className={cn(
-          "flex min-w-0 items-center gap-2.5 rounded-full border bg-white px-3.5 py-2 shadow-[0_10px_28px_rgba(15,23,42,0.04)] transition duration-200",
-          open
-            ? "border-[#CBD5E1] shadow-[0_14px_34px_rgba(15,23,42,0.07)]"
-            : "border-[#E8EDF5] hover:border-[#DDE5F0] hover:shadow-[0_14px_34px_rgba(15,23,42,0.06)]"
+          "flex h-8 min-w-0 items-center gap-2 rounded-[5px] border bg-[var(--gc-surface)] px-2.5 transition-colors duration-150",
+          open ? "border-[var(--gc-rule-strong)]" : "border-[var(--gc-rule)] hover:border-[var(--gc-rule-strong)]"
         )}
       >
-        <Search className="size-4 shrink-0 text-[#64748B]" />
+        <Search className="size-3.5 shrink-0 text-[var(--gc-ink-3)]" />
         <input
           ref={inputRef}
           value={query}
@@ -112,7 +110,7 @@ export function AppSearch() {
           aria-controls="gridcast-search-results"
           aria-activedescendant={open && results[activeIndex] ? `search-result-${activeIndex}` : undefined}
           placeholder="Search pages"
-          className="h-4 min-w-0 flex-1 bg-transparent text-[12px] font-medium text-[#0F172A] outline-none placeholder:text-[#64748B] [&::-webkit-search-cancel-button]:hidden"
+          className="h-full min-w-0 flex-1 bg-transparent text-[12.5px] text-[var(--gc-ink)] outline-none placeholder:text-[var(--gc-ink-3)] [&::-webkit-search-cancel-button]:hidden"
           onFocus={() => setOpen(true)}
           onChange={(event) => {
             setQuery(event.target.value)
@@ -121,14 +119,14 @@ export function AppSearch() {
           }}
           onKeyDown={handleKeyDown}
         />
-        <kbd className="hidden text-[9px] font-semibold text-[#94A3B8] md:block">ESC</kbd>
+        <kbd className="hidden font-mono text-[9.5px] uppercase tracking-[0.06em] text-[var(--gc-ink-3)] md:block">Esc</kbd>
       </div>
 
       {open ? (
         <div
           id="gridcast-search-results"
           role="listbox"
-          className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-[14px] border border-[#E8EDF5] bg-white p-1.5 shadow-[0_24px_65px_rgba(15,23,42,0.15)]"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-[6px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] p-1 shadow-[0_12px_32px_rgba(20,22,26,0.12)]"
         >
           {results.length ? (
             results.map((item, index) => {
@@ -144,18 +142,20 @@ export function AppSearch() {
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => navigate(item)}
                   className={cn(
-                    "flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-3 py-2 text-left transition-colors",
-                    index === activeIndex ? "bg-[#F3F6FB] text-[#0F172A]" : "text-[#64748B] hover:bg-[#F8FAFD]"
+                    "flex h-8 w-full cursor-pointer items-center gap-2.5 rounded-[4px] px-2 text-left transition-colors",
+                    index === activeIndex
+                      ? "bg-[var(--gc-surface-sunk)] text-[var(--gc-ink)]"
+                      : "text-[var(--gc-ink-2)] hover:bg-[var(--gc-surface-sunk)]"
                   )}
                 >
                   <Icon className="size-3.5 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{item.label}</span>
-                  <span className="text-[10px] font-medium text-[#94A3B8]">{item.href}</span>
+                  <span className="min-w-0 flex-1 truncate text-[12.5px]">{item.label}</span>
+                  <span className="font-mono text-[10px] text-[var(--gc-ink-3)]">{item.href}</span>
                 </button>
               )
             })
           ) : (
-            <p className="px-3 py-4 text-center text-[12px] font-medium text-[#94A3B8]">No matching pages</p>
+            <p className="px-3 py-4 text-center text-[12px] text-[var(--gc-ink-3)]">No matching pages</p>
           )}
         </div>
       ) : null}

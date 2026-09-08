@@ -1,5 +1,6 @@
 """FastAPI entrypoint for the GridCast AI backend."""
 
+import logging
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
@@ -10,11 +11,25 @@ from app.api.routes import router
 from app.core.config import settings
 from app.services.model_cache import load_runtime_artifacts
 
+LOGGER = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    """Load production ML artifacts once before serving requests."""
-    load_runtime_artifacts()
+    """Preload production ML artifacts, but do not require them to serve.
+
+    Preloading is a warm-cache optimisation. Every service already handles a
+    missing artifact by returning the documented `data_source: "fallback"`
+    contract, so a hard failure here made that contract unreachable on a running
+    server and turned a missing file into total downtime. Log and continue: the
+    API then reports `fallback` and the UI shows "Artifacts unavailable".
+    """
+    try:
+        load_runtime_artifacts()
+    except (FileNotFoundError, OSError, KeyError, TypeError, ValueError) as error:
+        LOGGER.warning(
+            "Model artifacts could not be preloaded; serving fallback responses: %s", error
+        )
     yield
 
 

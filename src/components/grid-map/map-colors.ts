@@ -1,11 +1,16 @@
 import type { RegionalLayer } from "@/lib/regional-data"
 
+/**
+ * One hue per layer, light to dark. Only one layer is drawn at a time and each
+ * ships a legend, so the hue signals which measure is on screen rather than
+ * encoding a category. Never a rainbow, and never a hue at a midpoint.
+ */
 export const REGIONAL_LAYER_SCALES: Record<RegionalLayer, readonly string[]> = {
-  currentDemand: ["#E8F1FF", "#BDD7FF", "#7FB3FF", "#3F82FF", "#1F5BE3"],
-  forecastDemand: ["#E8F1FF", "#BDD7FF", "#7FB3FF", "#3F82FF", "#1F5BE3"],
-  gridStress: ["#FFF7E6", "#FDE7B2", "#F8C96B", "#E99A31", "#C96B16"],
-  renewableGeneration: ["#ECF8F1", "#BFE5CF", "#7CC69A", "#3B9B68", "#19724A"],
-  carbonIntensity: ["#EEF2F6", "#CDD6E1", "#A9AFC0", "#C47777", "#A84B4B"],
+  currentDemand: ["#e4ecf7", "#bcd3ec", "#7fa9d8", "#3f7bbe", "#1c57b0"],
+  forecastDemand: ["#fbe9dc", "#f6cbaa", "#f0a271", "#e87838", "#c24d0a"],
+  gridStress: ["#f7efdd", "#ecd9ab", "#dcbb6c", "#c4993a", "#8a5200"],
+  renewableGeneration: ["#e3f0e8", "#bcdcc8", "#89c1a0", "#4e9c74", "#136f3f"],
+  carbonIntensity: ["#f6e7e6", "#e9c4c1", "#d79995", "#c26a66", "#b42318"],
 }
 
 export function getLayerScale(layer: RegionalLayer) {

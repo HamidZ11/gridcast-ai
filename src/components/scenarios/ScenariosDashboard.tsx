@@ -7,7 +7,8 @@ import { ScenarioControls } from "@/components/scenarios/ScenarioControls"
 import { ScenarioForecastChart } from "@/components/scenarios/ScenarioForecastChart"
 import { ScenarioImpactSummary } from "@/components/scenarios/ScenarioImpactSummary"
 import { ScenarioKpis } from "@/components/scenarios/ScenarioKpis"
-import { Card, CardContent } from "@/components/ui/card"
+import { ApiStatusNotice } from "@/components/layout/ApiStatusNotice"
+import { Note, PageHeader, Panel, StatusChip } from "@/components/ui/primitives"
 import { simulateScenario } from "@/lib/api"
 import {
   DEFAULT_SCENARIO,
@@ -69,78 +70,77 @@ export function ScenariosDashboard({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1880px] px-5 py-5 md:px-8 lg:px-10 lg:py-6 2xl:px-12">
-      <header className="animate-enter">
-        <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.18em] text-[#64748B]">
-          Planning
-        </p>
-        <h1 className="mt-1 text-[40px] font-semibold leading-[0.98] tracking-tight text-[#0F172A]">
-          Scenarios
-        </h1>
-        <p className="mt-2.5 max-w-3xl text-[15px] font-medium leading-6 text-[#64748B]">
-          Explore how operational conditions affect the next 48-hour electricity demand forecast.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-[1600px] px-4 py-4 md:px-6 lg:px-8">
+      <PageHeader
+        eyebrow="Planning"
+        title="Scenario simulator"
+        description="Adjust an operating assumption and re-run the 48-hour forecast against the current baseline."
+        actions={
+          <>
+            <StatusChip tone={isRunning ? "neutral" : error ? "bad" : "ok"}>
+              {isRunning ? "Running" : error ? "Failed" : "Up to date"}
+            </StatusChip>
+            <button
+              type="button"
+              onClick={resetScenario}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] border border-[var(--gc-rule-strong)] px-2.5 text-[12.5px] text-[var(--gc-ink-2)] transition-colors hover:bg-[var(--gc-surface-sunk)] hover:text-[var(--gc-ink)]"
+            >
+              <RotateCcw className="size-3.5" />
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => void runSimulation(inputs)}
+              aria-busy={isRunning}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-[5px] bg-[var(--gc-ink)] px-2.5 text-[12.5px] text-white transition-colors hover:bg-[#2A2E36] disabled:opacity-60"
+              disabled={isRunning}
+            >
+              <Play className="size-3.5" />
+              {isRunning ? "Running" : "Run again"}
+            </button>
+          </>
+        }
+        meta={
+          <label className="block max-w-[320px]">
+            <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">
+              Scenario name
+            </span>
+            <input
+              value={scenarioName}
+              onChange={(event) => setScenarioName(event.target.value)}
+              className="h-8 w-full rounded-[5px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] px-2.5 text-[12.5px] text-[var(--gc-ink)] outline-none placeholder:text-[var(--gc-ink-3)]"
+              aria-label="Scenario name"
+              placeholder="Name this scenario"
+            />
+          </label>
+        }
+      />
 
-      <section className="mt-4 flex flex-col gap-3 border-y border-[#E8EDF5] py-3.5 lg:flex-row lg:items-end lg:justify-between">
-        <label className="block w-full max-w-[360px]">
-          <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-            Scenario name
-          </span>
-          <input
-            value={scenarioName}
-            onChange={(event) => setScenarioName(event.target.value)}
-            className="h-9 w-full rounded-[10px] border border-[#E8EDF5] bg-white px-3 text-[13px] font-semibold text-[#0F172A] shadow-[0_8px_20px_rgba(15,23,42,0.035)] outline-none transition-colors placeholder:text-[#94A3B8] focus:border-[#BFDBFE] focus:ring-2 focus:ring-[#2563EB]/15"
-            aria-label="Scenario name"
-          />
-        </label>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={resetScenario}
-            className="flex h-9 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E8EDF5] bg-white px-3 text-[12px] font-semibold text-[#334155] shadow-[0_8px_20px_rgba(15,23,42,0.035)] transition duration-200 hover:border-[#D7DEE9] hover:bg-[#F8FAFD] focus-visible:ring-2 focus-visible:ring-[#2563EB]/35"
-          >
-            <RotateCcw className="size-3.5" />
-            Reset controls
-          </button>
-          <button
-            type="button"
-            onClick={() => void runSimulation(inputs)}
-            aria-busy={isRunning}
-            className="flex h-9 cursor-pointer items-center gap-2 rounded-[10px] border border-[#2563EB] bg-[#2563EB] px-3.5 text-[12px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.18)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(37,99,235,0.24)] focus-visible:ring-2 focus-visible:ring-[#2563EB]/35"
-          >
-            <Play className="size-3.5" />
-            Run Simulation
-          </button>
-        </div>
-      </section>
+      {error ? <ApiStatusNotice message={error} /> : null}
 
-      <section className="mt-4 grid items-start gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="mt-4 grid items-start gap-3 xl:grid-cols-[300px_minmax(0,1fr)]">
         <ScenarioControls inputs={inputs} onChange={updateInput} />
-        <div className="min-w-0 space-y-3.5">
+        <div className="min-w-0 space-y-3">
           {results ? (
             <>
               <ScenarioKpis results={results} />
-              <ScenarioForecastChart results={results} animationKey={animationKey} />
+              <div aria-busy={isRunning} className={isRunning ? "opacity-60 transition-opacity" : "transition-opacity"}>
+                <ScenarioForecastChart results={results} animationKey={animationKey} />
+              </div>
+              <ScenarioImpactSummary results={results} />
             </>
           ) : (
-            <Card className="min-h-[530px]">
-              <CardContent className="grid min-h-[530px] place-items-center px-6 text-center">
-                <div>
-                  <p className="text-[14px] font-semibold text-[#0F172A]">
-                    Simulation data unavailable
-                  </p>
-                  <p className="mt-1.5 max-w-md text-[12px] font-medium leading-5 text-[#64748B]">
-                    {error ?? "Waiting for the forecasting service."}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <Panel className="grid min-h-[320px] place-items-center px-6 text-center">
+              <div>
+                <p className="text-[13.5px] text-[var(--gc-ink)]">Simulation unavailable</p>
+                <Note className="mx-auto mt-1.5 max-w-md">
+                  {error ?? "Waiting for the forecasting service."}
+                </Note>
+              </div>
+            </Panel>
           )}
         </div>
       </section>
-
-      {results ? <ScenarioImpactSummary results={results} /> : null}
     </main>
   )
 }

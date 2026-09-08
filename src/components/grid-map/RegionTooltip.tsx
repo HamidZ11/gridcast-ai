@@ -14,9 +14,9 @@ export function RegionTooltip({
   const presentation = getRegionalLayerPresentation(region, layer)
 
   return (
-    <div className="min-w-[170px]">
-      <p className="text-[12px] font-semibold text-[#0F172A]">{region.name}</p>
-      <div className="mt-2 space-y-1 text-[11px]">
+    <div className="min-w-[168px]">
+      <p className="text-[12.5px] text-[var(--gc-ink)]">{region.name}</p>
+      <div className="mt-1.5 space-y-0.5 text-[11.5px]">
         {presentation.tooltipMetrics.map((metric) => (
           <TooltipRow key={metric.label} label={metric.label} value={metric.value} />
         ))}
@@ -28,8 +28,8 @@ export function RegionTooltip({
 function TooltipRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-5">
-      <span className="font-medium text-[#64748B]">{label}</span>
-      <span className="tabular-nums font-semibold text-[#0F172A]">{value}</span>
+      <span className="text-[var(--gc-ink-3)]">{label}</span>
+      <span className="font-mono tabular-nums text-[var(--gc-ink)]">{value}</span>
     </div>
   )
 }

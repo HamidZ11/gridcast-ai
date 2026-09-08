@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Note, Panel, PanelHeader, ProvenanceTag } from "@/components/ui/primitives"
 import type { HeatmapCell } from "@/data/mockForecastAnalyticsData"
 import { cn } from "@/lib/utils"
 
@@ -9,67 +9,98 @@ type DemandHeatmapProps = {
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const hours = Array.from({ length: 24 }, (_, index) => index)
 
-function intensityClass(value: number) {
-  if (value > 0.82) return "bg-[#1D4ED8]"
-  if (value > 0.68) return "bg-[#2563EB]"
-  if (value > 0.54) return "bg-[#60A5FA]"
-  if (value > 0.4) return "bg-[#93C5FD]"
-  if (value > 0.26) return "bg-[#BFDBFE]"
-  return "bg-[#EFF6FF]"
+/** One hue, light to dark - a magnitude scale, never a rainbow. */
+const STEPS = [
+  { max: 0.26, className: "bg-[var(--gc-seq-1)]", label: "0–25%" },
+  { max: 0.4, className: "bg-[var(--gc-seq-2)]", label: "26–40%" },
+  { max: 0.54, className: "bg-[var(--gc-seq-3)]", label: "41–54%" },
+  { max: 0.68, className: "bg-[var(--gc-seq-4)]", label: "55–68%" },
+  { max: 0.82, className: "bg-[var(--gc-seq-5)]", label: "69–82%" },
+  { max: 1.01, className: "bg-[var(--gc-seq-6)]", label: "83–100%" },
+]
+
+function step(value: number) {
+  return STEPS.find((entry) => value <= entry.max) ?? STEPS[STEPS.length - 1]
 }
 
 export function DemandHeatmap({ data }: DemandHeatmapProps) {
   const lookup = new Map(data.map((cell) => [`${cell.day}-${cell.hour}`, cell.value]))
 
   return (
-    <Card className="animate-enter-slow">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 px-5 pt-5 md:px-6">
-        <div>
-          <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.16em] text-[#94A3B8]">
-            Demand Heatmap
-          </p>
-          <h2 className="mt-1.5 text-[26px] font-semibold leading-8 tracking-tight text-[#0F172A]">
-            Day vs hour demand intensity
-          </h2>
-        </div>
-        <div className="hidden items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#94A3B8] md:flex">
-          <span>Low</span>
-          <div className="flex gap-1">
-            {[0.18, 0.32, 0.48, 0.62, 0.76, 0.92].map((value) => (
-              <span key={value} className={cn("size-3 rounded-[4px]", intensityClass(value))} />
-            ))}
-          </div>
-          <span>High</span>
-        </div>
-      </CardHeader>
-      <CardContent className="overflow-x-auto pb-5">
-        <div className="min-w-[980px]">
-          <div className="grid grid-cols-[42px_repeat(24,minmax(0,1fr))] gap-1.5">
-            <div />
-            {hours.map((hour) => (
-              <div key={hour} className="text-center text-[10px] font-semibold text-[#94A3B8]">
-                {hour}h
+    <Panel className="animate-enter">
+      <PanelHeader
+        eyebrow="Weekly shape"
+        title="Demand intensity by day and hour"
+        actions={
+          <div className="flex items-center gap-2">
+            <ProvenanceTag title="Fixed sample grid shipped with the frontend, not derived from the NESO record.">
+              Illustrative
+            </ProvenanceTag>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.07em] text-[var(--gc-ink-3)]">Low</span>
+              <div className="flex gap-px">
+                {STEPS.map((entry) => (
+                  <span key={entry.label} title={entry.label} className={cn("h-3 w-3", entry.className)} />
+                ))}
               </div>
-            ))}
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.07em] text-[var(--gc-ink-3)]">High</span>
+            </div>
+          </div>
+        }
+      />
+      <div className="gc-scroll-x p-4">
+        <table className="w-full min-w-[760px] border-collapse">
+          <caption className="sr-only">
+            Relative demand intensity for each hour of each weekday, as a percentage of the weekly
+            maximum.
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="w-10" />
+              {hours.map((hour) => (
+                <th
+                  key={hour}
+                  scope="col"
+                  className="pb-1.5 text-center font-mono text-[9.5px] font-normal tabular-nums text-[var(--gc-ink-3)]"
+                >
+                  {String(hour).padStart(2, "0")}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
             {days.map((day) => (
-              <div key={day} className="contents">
-                <div className="flex h-7 items-center text-[11px] font-semibold text-[#64748B]">{day}</div>
+              <tr key={day}>
+                <th
+                  scope="row"
+                  className="pr-2 text-left font-mono text-[10.5px] font-normal uppercase tracking-[0.06em] text-[var(--gc-ink-3)]"
+                >
+                  {day}
+                </th>
                 {hours.map((hour) => {
                   const value = lookup.get(`${day}-${hour}`) ?? 0
-
                   return (
-                    <div
-                      key={`${day}-${hour}`}
-                      title={`${day} ${hour}:00 - ${(value * 100).toFixed(0)}% demand intensity`}
-                      className={cn("h-7 rounded-[7px] transition hover:scale-110 hover:ring-2 hover:ring-white", intensityClass(value))}
-                    />
+                    <td key={`${day}-${hour}`} className="p-px">
+                      <div
+                        title={`${day} ${String(hour).padStart(2, "0")}:00 — ${(value * 100).toFixed(0)}% of the weekly maximum`}
+                        className={cn("h-5 rounded-[2px]", step(value).className)}
+                      >
+                        <span className="sr-only">
+                          {day} {String(hour).padStart(2, "0")}:00, {(value * 100).toFixed(0)} percent
+                        </span>
+                      </div>
+                    </td>
                   )
                 })}
-              </div>
+              </tr>
             ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </tbody>
+        </table>
+      </div>
+      <Note className="border-t border-[var(--gc-rule)] px-4 py-2.5">
+        A fixed sample grid bundled with the frontend. Hourly intensity is not yet computed from the
+        NESO record.
+      </Note>
+    </Panel>
   )
 }

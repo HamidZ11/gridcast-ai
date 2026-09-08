@@ -1,50 +1,37 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { HelpTooltip } from "@/components/ui/help-tooltip"
+import { Figure, Note, Panel, PanelHeader } from "@/components/ui/primitives"
 
 type ConfidenceCardProps = {
   value: number | null
   text: string
 }
 
+/**
+ * Previously "Model confidence", shown as a filled meter at 98.6%.
+ *
+ * That framing implied a verified confidence level for the product's 48-hour
+ * output. The figure is 100 minus the one-step-ahead held-out MAPE, so it is
+ * labelled as exactly that, and the meter is gone - a bar that is always ~99%
+ * full carries no information and reads as a health gauge.
+ */
 export function ConfidenceCard({ value, text }: ConfidenceCardProps) {
   return (
-    <Card className="animate-enter min-h-[338px]">
-      <CardHeader className="px-5 pt-5">
-        <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.16em] text-[#94A3B8]">
-          Model Confidence
-        </p>
-        <div className="mt-3 flex items-baseline gap-2">
-          <span className="tabular-nums text-[42px] font-semibold leading-none tracking-tight text-[#0F172A]">
-            {value === null ? "--" : value.toFixed(1)}
-          </span>
-          {value === null ? null : (
-            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#94A3B8]">%</span>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="mt-0.5 h-2.5 overflow-hidden rounded-full bg-[#EEF2F7]">
-          <div
-            className="h-full rounded-full bg-[#2563EB] shadow-[0_8px_18px_rgba(37,99,235,0.22)]"
-            style={{ width: `${value ?? 0}%` }}
-          />
-        </div>
-        <p className="mt-5 text-[13px] font-medium leading-6 text-[#64748B]">{text}</p>
-        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-          {[
-            ["Error history", null],
-            ["Stability", null],
-            ["Interval width", "The range of plausible demand values around the forecast. A narrower range indicates less uncertainty."],
-          ].map(([label, help]) => (
-            <div key={label} className="rounded-[15px] border border-[#E8EDF5] bg-[#F8FAFD] px-2.5 py-2.5">
-              <p className="flex items-center justify-center gap-1 text-[11px] font-bold uppercase leading-4 tracking-[0.12em] text-[#94A3B8]">
-                {label}
-                {help ? <HelpTooltip content={help} /> : null}
-              </p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <Panel className="animate-enter">
+      <PanelHeader eyebrow="Accuracy" title="Held-out accuracy, one step ahead" />
+      <div className="px-4 py-4">
+        <Figure
+          label="100 − MAPE on the held-out split"
+          value={value === null ? "--" : value.toFixed(1)}
+          unit={value === null ? undefined : "%"}
+          state={value === null ? "unavailable" : "value"}
+        />
+        <Note className="mt-3">{text}</Note>
+        <Note className="mt-2 flex items-start gap-1">
+          Measured where the previous half-hour is known. The dashboard&apos;s 48-hour horizon feeds
+          each prediction back in, so its error is larger and is not measured here.
+          <HelpTooltip content="A rolling-origin backtest would be needed to report accuracy for the full recursive horizon. That is listed as planned work, not implemented." />
+        </Note>
+      </div>
+    </Panel>
   )
 }

@@ -22,18 +22,30 @@ def load_runtime_artifacts(
 
 
 def get_cached_model(model_path: Path | None = None) -> SupportsPredict:
-    """Return the startup-loaded model, with explicit path override for tests."""
+    """Return the startup-loaded model, with explicit path override for tests.
+
+    Startup preloading is an optimisation, not a precondition. When the cache is
+    cold - a TestClient used without its context manager never runs lifespan
+    events - the artifact is loaded directly from settings so callers still see
+    the documented behaviour: a real model when the file exists, and
+    FileNotFoundError (which the services turn into the fallback contract) when
+    it does not. Previously a cold cache raised RuntimeError, which no service
+    caught, so every endpoint returned 500 instead.
+    """
     if model_path is not None:
         return load_model(model_path)
     if "model" not in _runtime_cache:
-        raise RuntimeError("Model artifact has not been loaded at application startup.")
+        return load_model(settings.model_artifact_path)
     return cast(SupportsPredict, _runtime_cache["model"])
 
 
 def get_cached_metadata(metadata_path: Path | None = None) -> ModelMetadataPayload:
-    """Return startup-loaded model metadata, with explicit path override for tests."""
+    """Return startup-loaded metadata, with explicit path override for tests.
+
+    Same cold-cache behaviour as :func:`get_cached_model`.
+    """
     if metadata_path is not None:
         return load_model_metadata(metadata_path)
     if "metadata" not in _runtime_cache:
-        raise RuntimeError("Model metadata has not been loaded at application startup.")
+        return load_model_metadata(settings.model_metadata_path)
     return cast(ModelMetadataPayload, _runtime_cache["metadata"])

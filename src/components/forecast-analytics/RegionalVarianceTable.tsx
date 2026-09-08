@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Note, Panel, PanelHeader, ProvenanceTag } from "@/components/ui/primitives"
 import type { RegionalVariance } from "@/data/mockForecastAnalyticsData"
 import { cn } from "@/lib/utils"
 
@@ -8,50 +8,68 @@ type RegionalVarianceTableProps = {
 
 export function RegionalVarianceTable({ rows }: RegionalVarianceTableProps) {
   return (
-    <Card className="animate-enter min-h-[300px]">
-      <CardHeader className="px-5 pt-5">
-        <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.16em] text-[#94A3B8]">
-          Regional Demand Variance
-        </p>
-        <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-          Load deviation by region
-        </h2>
-      </CardHeader>
-      <CardContent className="px-0 pb-2">
-        <table className="w-full border-collapse text-left text-[13px]">
+    <Panel className="animate-enter">
+      <PanelHeader
+        eyebrow="Regional variance"
+        title="Load deviation by region"
+        actions={
+          <ProvenanceTag title="Fixed sample rows shipped with the frontend. The model is national and does not produce regional anomaly scores.">
+            Illustrative
+          </ProvenanceTag>
+        }
+      />
+      <div className="gc-scroll-x">
+        <table className="w-full min-w-[440px] border-collapse text-left">
           <thead>
-            <tr className="border-y border-[#E8EDF5] bg-[#F8FAFD] text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-              <th className="px-5 py-2.5">Region</th>
-              <th className="px-3.5 py-2.5">Load</th>
-              <th className="px-3.5 py-2.5">Trend</th>
-              <th className="px-5 py-2.5">Anomaly Score</th>
+            <tr className="border-b border-[var(--gc-rule-strong)]">
+              {["Region", "Load", "Trend", "Anomaly score"].map((heading, index) => (
+                <th
+                  key={heading}
+                  scope="col"
+                  className={cn(
+                    "px-4 py-2 font-mono text-[10px] font-normal uppercase tracking-[0.07em] text-[var(--gc-ink-3)]",
+                    index > 0 && "text-right"
+                  )}
+                >
+                  {heading}
+                </th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#E8EDF5]">
+          <tbody>
             {rows.map((row) => (
-              <tr key={row.region} className="transition hover:bg-[#FBFCFE]">
-                <td className="px-5 py-3 font-semibold text-[#0F172A]">{row.region}</td>
-                <td className="px-3.5 py-3 font-medium tabular-nums text-[#64748B]">{row.load}</td>
-                <td className="px-3.5 py-3 font-medium tabular-nums text-[#64748B]">{row.trend}</td>
-                <td className="px-5 py-3">
+              <tr key={row.region} className="border-b border-[var(--gc-rule)] last:border-b-0">
+                <th scope="row" className="px-4 py-2.5 text-[12.5px] font-normal text-[var(--gc-ink)]">
+                  {row.region}
+                </th>
+                <td className="px-4 py-2.5 text-right font-mono text-[12px] tabular-nums text-[var(--gc-ink-2)]">
+                  {row.load}
+                </td>
+                <td className="px-4 py-2.5 text-right font-mono text-[12px] tabular-nums text-[var(--gc-ink-2)]">
+                  {row.trend}
+                </td>
+                <td className="px-4 py-2.5 text-right">
                   <span
                     className={cn(
-                      "inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold",
-                      row.severity === "critical"
-                        ? "border-[#FECACA] bg-[#FEF2F2] text-[#DC2626]"
-                        : row.severity === "stable"
-                          ? "border-[#E8EDF5] bg-white text-[#64748B]"
-                          : "border-[#E8EDF5] bg-[#F8FAFD] text-[#64748B]"
+                      "inline-flex items-center gap-1.5 font-mono text-[12px] tabular-nums",
+                      row.severity === "critical" ? "text-[var(--gc-ink)]" : "text-[var(--gc-ink-2)]"
                     )}
                   >
+                    {row.severity === "critical" ? (
+                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[var(--gc-bad)]" />
+                    ) : null}
                     {row.anomalyScore}
+                    {row.severity === "critical" ? <span className="sr-only">, flagged</span> : null}
                   </span>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-      </CardContent>
-    </Card>
+      </div>
+      <Note className="border-t border-[var(--gc-rule)] px-4 py-2.5">
+        Fixed sample rows. The production model forecasts national demand only.
+      </Note>
+    </Panel>
   )
 }

@@ -1,4 +1,6 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+"use client"
+
+import { Note, Panel, PanelHeader } from "@/components/ui/primitives"
 import {
   getRegionalLayerValue,
   getRegionalLeaderboardPresentation,
@@ -6,14 +8,17 @@ import {
   type RegionalDemandData,
   type RegionalLayer,
 } from "@/lib/regional-data"
+import { cn } from "@/lib/utils"
 
 export function RegionLeaderboard({
   regions,
   layer,
+  selectedRegionId,
   onSelect,
 }: {
   regions: RegionalDemandData[]
   layer: RegionalLayer
+  selectedRegionId: RegionId
   onSelect: (regionId: RegionId) => void
 }) {
   const sortedRegions = [...regions].sort(
@@ -22,55 +27,93 @@ export function RegionLeaderboard({
   const tablePresentation = getRegionalLeaderboardPresentation(sortedRegions[0], layer)
 
   return (
-    <Card>
-      <CardHeader className="px-5 pt-5 md:px-6">
-        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">Regional Leaderboard</p>
-        <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-          {tablePresentation.heading}
-        </h2>
-      </CardHeader>
-      <CardContent className="px-0 pb-2">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
-            <thead>
-              <tr className="border-y border-[#E8EDF5] bg-[#F8FAFD] text-[10px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-                <th className="px-6 py-2.5">Region</th>
-                {tablePresentation.headers.map((header) => (
-                  <th key={header} className="px-4 py-2.5">{header}</th>
-                ))}
-                <th className="px-6 py-2.5">Confidence</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E8EDF5]">
-              {sortedRegions.map((region, index) => {
-                const presentation = getRegionalLeaderboardPresentation(region, layer)
-                return (
-                  <tr
-                  key={region.id}
-                  tabIndex={0}
-                  onClick={() => onSelect(region.id)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") onSelect(region.id)
-                  }}
-                  className="cursor-pointer transition-colors hover:bg-[#FBFCFE] focus:bg-[#F8FAFD] focus:outline-none"
+    <Panel>
+      <PanelHeader
+        eyebrow="Ranking"
+        title={tablePresentation.heading}
+        note="Select a row to load that region in the detail panel."
+      />
+      <div className="gc-scroll-x">
+        <table className="w-full min-w-[680px] border-collapse text-left">
+          <thead>
+            <tr className="border-b border-[var(--gc-rule-strong)]">
+              <th
+                scope="col"
+                className="px-4 py-2 font-mono text-[10px] font-normal uppercase tracking-[0.07em] text-[var(--gc-ink-3)]"
+              >
+                Region
+              </th>
+              {tablePresentation.headers.map((header) => (
+                <th
+                  key={header}
+                  scope="col"
+                  className="px-3 py-2 text-right font-mono text-[10px] font-normal uppercase tracking-[0.07em] text-[var(--gc-ink-3)]"
                 >
-                  <td className="px-6 py-3 font-semibold text-[#0F172A]">
-                    <span className="mr-3 inline-block w-4 text-[10px] font-bold text-[#94A3B8]">{index + 1}</span>
-                    {region.name}
-                  </td>
+                  {header}
+                </th>
+              ))}
+              <th
+                scope="col"
+                className="px-4 py-2 text-right font-mono text-[10px] font-normal uppercase tracking-[0.07em] text-[var(--gc-ink-3)]"
+              >
+                Confidence
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedRegions.map((region, index) => {
+              const presentation = getRegionalLeaderboardPresentation(region, layer)
+              const selected = region.id === selectedRegionId
+              return (
+                <tr
+                  key={region.id}
+                  aria-selected={selected}
+                  className={cn(
+                    "border-b border-[var(--gc-rule)] last:border-b-0",
+                    selected && "bg-[var(--gc-surface-sunk)]/70"
+                  )}
+                >
+                  <th scope="row" className="p-0 text-left font-normal">
+                    <button
+                      type="button"
+                      onClick={() => onSelect(region.id)}
+                      className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-2.5 text-left text-[12.5px] text-[var(--gc-ink)]"
+                    >
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "h-1.5 w-1.5 shrink-0 rounded-full",
+                          selected ? "bg-[var(--gc-model)]" : "bg-transparent"
+                        )}
+                      />
+                      <span className="w-4 shrink-0 font-mono text-[10.5px] tabular-nums text-[var(--gc-ink-3)]">
+                        {index + 1}
+                      </span>
+                      <span className="truncate">{region.name}</span>
+                      {selected ? <span className="sr-only">, selected</span> : null}
+                    </button>
+                  </th>
                   {presentation.values.map((value, valueIndex) => (
-                    <td key={presentation.headers[valueIndex]} className="px-4 py-3 tabular-nums font-medium text-[#64748B]">
+                    <td
+                      key={presentation.headers[valueIndex]}
+                      className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-[12px] tabular-nums text-[var(--gc-ink-2)]"
+                    >
                       {value}
                     </td>
                   ))}
-                  <td className="px-6 py-3 tabular-nums font-semibold text-[#0F172A]">{region.confidence.toFixed(1)}%</td>
+                  <td className="whitespace-nowrap px-4 py-2.5 text-right font-mono text-[12px] tabular-nums text-[var(--gc-ink-2)]">
+                    {region.confidence.toFixed(1)}%
+                  </td>
                 </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <Note className="border-t border-[var(--gc-rule)] px-4 py-2.5">
+        Confidence is derived from the national one-step-ahead MAPE with a per-region penalty. It is
+        a heuristic, not a measured regional accuracy.
+      </Note>
+    </Panel>
   )
 }

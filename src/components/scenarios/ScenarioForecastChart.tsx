@@ -12,7 +12,8 @@ import {
   YAxis,
 } from "recharts"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ChartDataTable } from "@/components/dashboard/ChartDataTable"
+import { Eyebrow, Panel, PanelHeader } from "@/components/ui/primitives"
 import type { ScenarioForecastPoint, ScenarioResults } from "@/lib/scenario-engine"
 
 type TooltipEntry = {
@@ -34,16 +35,16 @@ function ScenarioTooltip({
   const values = payload.filter((item) => typeof item.value === "number")
 
   return (
-    <div className="min-w-48 rounded-[14px] border border-[#E8EDF5] bg-white/96 p-3 shadow-[0_20px_55px_rgba(15,23,42,0.14)] backdrop-blur">
-      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">{label}</p>
-      <div className="space-y-1.5">
+    <div className="min-w-44 rounded-[6px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] p-2.5 shadow-[0_12px_32px_rgba(20,22,26,0.14)]">
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.07em] text-[var(--gc-ink-3)]">{label}</p>
+      <div className="space-y-1">
         {values.map((item) => (
           <div key={item.name} className="flex items-center justify-between gap-5 text-[12px]">
-            <span className="flex items-center gap-2 font-medium text-[#64748B]">
-              <span className="size-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+            <span className="flex items-center gap-1.5 text-[var(--gc-ink-2)]">
+              <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: item.color }} />
               {item.name}
             </span>
-            <span className="tabular-nums font-semibold text-[#0F172A]">
+            <span className="font-mono tabular-nums text-[var(--gc-ink)]">
               {(item.value as number).toFixed(1)} GW
             </span>
           </div>
@@ -68,75 +69,76 @@ export function ScenarioForecastChart({
   const peakPoint: ScenarioForecastPoint | undefined = results.points.find(
     (point) => point.scenario === results.peakDemand
   )
+  const values = results.points.flatMap((point) => [point.baseline, point.scenario])
+  const min = Math.floor((Math.min(...values) - 1) / 2) * 2
+  const max = Math.ceil((Math.max(...values) + 1) / 2) * 2
+  const ticks: number[] = []
+  const stepSize = Math.max(2, Math.ceil((max - min) / 5 / 2) * 2)
+  for (let value = min; value <= max; value += stepSize) ticks.push(value)
 
   return (
-    <Card className="min-h-[530px] shadow-[0_26px_70px_rgba(15,23,42,0.075)]">
-      <CardHeader className="gap-4 px-5 pb-0 md:flex md:flex-row md:items-start md:justify-between md:px-6">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">48-hour simulation</p>
-          <h2 className="mt-1 text-[24px] font-semibold leading-8 tracking-tight text-[#0F172A]">
-            Scenario demand forecast
-          </h2>
-          <p className="mt-1 text-[12px] font-medium text-[#64748B]">
-            Model-backed simulation compared with the active baseline forecast
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-[#64748B]">
-          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#CBD5E1]" />Baseline</span>
-          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#2563EB]" />Scenario</span>
-          <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-[#DBEAFE]" />Confidence interval</span>
-        </div>
-      </CardHeader>
-      <CardContent className="px-2 pb-4 pt-0 sm:px-5">
-        <div className="h-[410px]">
+    <Panel>
+      <PanelHeader
+        eyebrow="48-hour simulation"
+        title="Scenario against the baseline forecast"
+        actions={
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <LegendKey color="var(--gc-ink-3)" label="Baseline" dashed />
+            <LegendKey color="var(--gc-model)" label="Scenario" />
+            <LegendKey color="var(--gc-model)" label="Interval" band />
+          </div>
+        }
+      />
+      <div className="gc-scroll-x px-1 pt-3 sm:px-3">
+        <p className="pl-2 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">GW</p>
+        <div className="h-[340px] min-w-[540px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={results.points} margin={{ top: 34, right: 24, left: 0, bottom: 8 }}>
+            <AreaChart data={results.points} margin={{ top: 16, right: 28, left: 0, bottom: 6 }}>
               <defs>
                 <linearGradient id="scenario-confidence-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity={0.13} />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity={0.015} />
+                  <stop offset="0%" stopColor="var(--gc-model)" stopOpacity={0.14} />
+                  <stop offset="100%" stopColor="var(--gc-model)" stopOpacity={0.04} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#EEF2F7" strokeDasharray="3 10" vertical={false} />
+              <CartesianGrid stroke="var(--gc-rule)" vertical={false} />
               <XAxis
                 dataKey="time"
-                axisLine={false}
+                axisLine={{ stroke: "var(--gc-rule-strong)" }}
                 tickLine={false}
                 interval={15}
-                tick={{ fill: "#64748B", fontSize: 11, fontWeight: 600 }}
+                tick={{ fill: "var(--gc-ink-3)", fontSize: 11 }}
                 tickFormatter={tickFormatter}
-                dy={10}
+                dy={8}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                width={55}
-                domain={["dataMin - 2", "dataMax + 2"]}
-                tick={{ fill: "#64748B", fontSize: 11, fontWeight: 600 }}
-                tickFormatter={(value) => `${Math.round(value)} GW`}
-              />
+                width={34}
+                domain={[min, max]}
+                ticks={ticks}
+                tick={{ fill: "var(--gc-ink-3)", fontSize: 11 }}
+                tickFormatter={(value: number) => `${value}`}
+                              />
               <Tooltip
                 content={<ScenarioTooltip />}
-                cursor={{ stroke: "#94A3B8", strokeDasharray: "3 6", strokeWidth: 1.2 }}
+                cursor={{ stroke: "var(--gc-ink-3)", strokeWidth: 1 }}
               />
               <Area
                 key={`interval-${animationKey}`}
                 dataKey="confidenceRange"
-                name="Confidence interval"
+                name="Interval"
                 type="monotone"
                 stroke="none"
                 fill="url(#scenario-confidence-fill)"
-                isAnimationActive
-                animationDuration={420}
-                animationEasing="ease-out"
+                isAnimationActive={false}
               />
               <Line
                 dataKey="baseline"
                 name="Baseline"
                 type="monotone"
-                stroke="#CBD5E1"
-                strokeWidth={2}
-                strokeDasharray="5 6"
+                stroke="var(--gc-ink-3)"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
                 dot={false}
                 activeDot={false}
                 isAnimationActive={false}
@@ -146,35 +148,79 @@ export function ScenarioForecastChart({
                 dataKey="scenario"
                 name="Scenario"
                 type="monotone"
-                stroke="#2563EB"
-                strokeWidth={3}
+                stroke="var(--gc-model)"
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5, fill: "#2563EB", stroke: "#FFFFFF", strokeWidth: 3 }}
-                isAnimationActive
-                animationDuration={480}
-                animationEasing="ease-out"
+                activeDot={{ r: 4, fill: "var(--gc-model)", stroke: "var(--gc-surface)", strokeWidth: 2 }}
+                isAnimationActive={false}
               />
               {peakPoint ? (
                 <ReferenceDot
                   x={peakPoint.time}
                   y={peakPoint.scenario}
-                  r={6}
-                  fill="#2563EB"
-                  stroke="#FFFFFF"
-                  strokeWidth={3}
+                  r={4}
+                  fill="var(--gc-model)"
+                  stroke="var(--gc-surface)"
+                  strokeWidth={2}
                   label={{
                     value: `Peak ${peakPoint.scenario.toFixed(1)} GW`,
                     position: "top",
-                    fill: "#334155",
-                    fontSize: 11,
-                    fontWeight: 700,
+                    fill: "var(--gc-ink)",
+                    fontSize: 10.5,
                   }}
                 />
               ) : null}
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <ChartDataTable
+        summary="Simulation data table"
+        note="Every fourth half-hour of the 48-hour horizon."
+        columns={["Time", "Baseline GW", "Scenario GW", "Interval"]}
+        rows={results.points
+          .filter((_, index) => index % 4 === 0)
+          .map((point) => [
+            point.time,
+            point.baseline.toFixed(2),
+            point.scenario.toFixed(2),
+            `${point.confidenceRange[0].toFixed(1)}-${point.confidenceRange[1].toFixed(1)}`,
+          ])}
+      />
+    </Panel>
+  )
+}
+
+function LegendKey({
+  color,
+  label,
+  dashed = false,
+  band = false,
+}: {
+  color: string
+  label: string
+  dashed?: boolean
+  band?: boolean
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <svg width="14" height="8" aria-hidden className="shrink-0">
+        {band ? (
+          <rect x="0" y="1" width="14" height="6" fill={color} opacity="0.16" />
+        ) : (
+          <line
+            x1="0"
+            y1="4"
+            x2="14"
+            y2="4"
+            stroke={color}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray={dashed ? "4 3" : undefined}
+          />
+        )}
+      </svg>
+      <Eyebrow className="normal-case tracking-[0.04em]">{label}</Eyebrow>
+    </span>
   )
 }

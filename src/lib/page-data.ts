@@ -231,7 +231,7 @@ function buildOverviewMetrics(
           value: peak.toFixed(1),
           unit: "GW",
           delta: "Model forecast",
-          deltaLabel: `${forecast?.horizon_hours ?? 48}-hour horizon`,
+          deltaLabel: `Recursive ${forecast?.horizon_hours ?? 48}-hour horizon`,
           updatedAt: `Starts ${formatDateTime(forecast!.points[0].timestamp)} UTC`,
           sparkline: forecastValues.slice(-7),
         },
@@ -247,17 +247,17 @@ function buildOverviewMetrics(
           sparkline: historyValues.slice(-7),
         },
     mape === null
-      ? unavailableMetric("Forecast Accuracy", "validation metrics unavailable")
+      ? unavailableMetric("Held-out accuracy", "validation metrics unavailable")
       : {
-          title: "Forecast Accuracy",
+          title: "Held-out accuracy",
           value: (100 - mape).toFixed(1),
           unit: "%",
           delta: `${mape.toFixed(2)}% MAPE`,
-          deltaLabel: "saved validation result",
-          updatedAt: "From active model metadata",
+          deltaLabel: "one step ahead, not the 48-hour horizon",
+          updatedAt: "Saved model metadata",
           sparkline: [],
         },
-    unavailableMetric("Temperature Impact", "weather features are not included"),
+    unavailableMetric("Temperature impact", "Weather is not a model feature"),
   ]
 }
 

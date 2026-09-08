@@ -10,23 +10,31 @@ export function LayerSelector({
   onChange: (value: RegionalLayer) => void
 }) {
   return (
-    <div className="flex max-w-full items-center gap-1 overflow-x-auto rounded-[11px] border border-[#E8EDF5] bg-white p-1 shadow-[0_8px_20px_rgba(15,23,42,0.035)]">
-      {regionalLayerOptions.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          aria-pressed={value === option.value}
-          onClick={() => onChange(option.value)}
-          className={cn(
-            "h-8 shrink-0 cursor-pointer rounded-[8px] px-3 text-[11px] font-semibold transition duration-200 focus-visible:ring-2 focus-visible:ring-[#2563EB]/35",
-            value === option.value
-              ? "bg-[#F3F6FB] text-[#0F172A] shadow-[inset_0_0_0_1px_rgba(232,237,245,0.9)]"
-              : "text-[#64748B] hover:bg-[#F8FAFD] hover:text-[#334155]"
-          )}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div
+      role="radiogroup"
+      aria-label="Map layer"
+      className="gc-scroll-x -mx-1 flex max-w-full items-center gap-px px-1"
+    >
+      {regionalLayerOptions.map((option) => {
+        const active = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "h-7 shrink-0 cursor-pointer whitespace-nowrap rounded-[5px] border px-2.5 text-[12px] transition-colors duration-150",
+              active
+                ? "border-[var(--gc-rule-strong)] bg-[var(--gc-surface-sunk)] text-[var(--gc-ink)]"
+                : "border-transparent text-[var(--gc-ink-2)] hover:bg-[var(--gc-surface-sunk)] hover:text-[var(--gc-ink)]"
+            )}
+          >
+            {option.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

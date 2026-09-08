@@ -13,7 +13,8 @@ import {
   YAxis,
 } from "recharts"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ChartDataTable } from "@/components/dashboard/ChartDataTable"
+import { Eyebrow, Note, Panel, PanelHeader } from "@/components/ui/primitives"
 import type { ForecastPoint } from "@/types/dashboard"
 
 type ForecastChartProps = {
@@ -40,7 +41,6 @@ function formatTimestamp(timestamp: string) {
   return `${new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -51,11 +51,7 @@ function formatTimestamp(timestamp: string) {
 function formatAxisTimestamp(timestamp: string) {
   const date = new Date(timestamp)
   if (date.getUTCHours() === 0 && date.getUTCMinutes() === 0) {
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "short",
-      timeZone: "UTC",
-    }).format(date)
+    return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" }).format(date)
   }
   return new Intl.DateTimeFormat("en-GB", {
     hour: "2-digit",
@@ -63,6 +59,21 @@ function formatAxisTimestamp(timestamp: string) {
     hour12: false,
     timeZone: "UTC",
   }).format(date)
+}
+
+/** Clean, round y ticks rather than whatever the data extremes happen to be. */
+function buildYAxis(data: ForecastPoint[]) {
+  const values = data.flatMap((point) =>
+    [point.demand, point.forecast, point.confidenceLow, point.confidenceHigh].filter(
+      (value): value is number => typeof value === "number"
+    )
+  )
+  if (!values.length) return { domain: [0, 10] as [number, number], ticks: [0, 5, 10] }
+  const min = Math.floor((Math.min(...values) - 1) / 5) * 5
+  const max = Math.ceil((Math.max(...values) + 1) / 5) * 5
+  const ticks: number[] = []
+  for (let value = min; value <= max; value += 5) ticks.push(value)
+  return { domain: [min, max] as [number, number], ticks }
 }
 
 function ChartTooltip({
@@ -74,29 +85,33 @@ function ChartTooltip({
   label?: string
   payload?: TooltipPayload[]
 }) {
-  if (!active || !payload?.length) {
-    return null
-  }
+  if (!active || !payload?.length) return null
 
   return (
-    <div className="min-w-[224px] rounded-[18px] border border-[#E8EDF5] bg-white/96 p-3.5 shadow-[0_24px_70px_rgba(15,23,42,0.16)] ring-1 ring-white/70 backdrop-blur">
-      <p className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
+    <div className="min-w-[196px] rounded-[6px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] p-2.5 shadow-[0_12px_32px_rgba(20,22,26,0.14)]">
+      <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.07em] text-[var(--gc-ink-3)]">
         {label ? formatTimestamp(label) : "Timestamp unavailable"}
       </p>
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         {payload.map((item) => {
-          if (item.value === null || (item.payload?.forecastAnchor && item.name === "Forecast demand")) return null
+          if (item.value === null || (item.payload?.forecastAnchor && item.name === "Model forecast")) {
+            return null
+          }
           const value = Array.isArray(item.value)
-            ? `${item.value[0].toFixed(1)}-${item.value[1].toFixed(1)} GW`
-            : `${item.value.toFixed(1)} GW`
+            ? `${item.value[0].toFixed(1)}–${item.value[1].toFixed(1)}`
+            : `${item.value.toFixed(1)}`
 
           return (
-            <div key={item.name} className="flex items-center justify-between gap-7 text-[13px]">
-              <span className="flex items-center gap-2 font-medium text-[#64748B]">
-                <span className="size-2 rounded-full" style={{ backgroundColor: item.color ?? "#94A3B8" }} />
+            <div key={item.name} className="flex items-center justify-between gap-6 text-[12px]">
+              <span className="flex items-center gap-1.5 text-[var(--gc-ink-2)]">
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ backgroundColor: item.color ?? "var(--gc-ink-3)" }}
+                />
                 {item.name}
               </span>
-              <span className="tabular-nums font-semibold text-[#0F172A]">{value}</span>
+              <span className="font-mono tabular-nums text-[var(--gc-ink)]">{value} GW</span>
             </div>
           )
         })}
@@ -125,132 +140,216 @@ export function ForecastChart({
     })
     .map((point) => point.timestamp)
 
+  const { domain, ticks } = buildYAxis(data)
+
+  const tableRows = data
+    .filter((_, index) => index % 4 === 0)
+    .map((point) => [
+      formatTimestamp(point.timestamp),
+      point.demand === null ? null : point.demand.toFixed(2),
+      point.forecast === null || point.forecastAnchor ? null : point.forecast.toFixed(2),
+      point.confidenceLow === null || point.confidenceHigh === null
+        ? null
+        : `${point.confidenceLow.toFixed(1)}–${point.confidenceHigh.toFixed(1)}`,
+    ])
+
   return (
-    <Card className="min-h-[640px] shadow-[0_26px_70px_rgba(15,23,42,0.075)]">
-      <CardHeader className="flex flex-col gap-3.5 px-5 pt-5 md:flex-row md:items-start md:justify-between md:px-6 md:pt-6">
-        <div>
-          <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.16em] text-[#94A3B8]">Demand Forecast</p>
-          <h2 className="mt-1.5 text-[26px] font-semibold leading-8 tracking-tight text-[#0F172A]">
-            Historical demand and 48-hour forecast
-          </h2>
-          <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] font-semibold text-[#64748B]">
-            <span>Latest observation: {latestObservationLabel}</span>
-            <span>Forecast starts: {forecastStartLabel}</span>
-            {forecastHorizon !== "Unavailable" ? <span>Forecast horizon: {forecastHorizon}</span> : null}
-            {dataset !== "Unavailable" ? <span>Source: {dataset}</span> : null}
-            {modelVersion !== "Unavailable" ? <span>Model: {modelVersion}</span> : null}
-            {trainingData !== "Unavailable" ? <span>Training data: {trainingData}</span> : null}
+    <Panel>
+      <PanelHeader
+        eyebrow="Demand"
+        title="Observed demand and the 48-hour forecast"
+        actions={
+          data.length === 0 ? null : (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <LegendKey color="var(--gc-observed)" label="Observed" />
+              <LegendKey color="var(--gc-model)" label="Model forecast" dashed />
+              <LegendKey color="var(--gc-model)" label="90% interval" band />
+            </div>
+          )
+        }
+      />
+
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-b border-[var(--gc-rule)] px-4 py-2.5 sm:grid-cols-3 xl:grid-cols-5">
+        {[
+          { label: "Latest observation", value: latestObservationLabel },
+          { label: "Forecast starts", value: forecastStartLabel },
+          { label: "Horizon", value: forecastHorizon },
+          { label: "Model", value: modelVersion },
+          { label: "Source", value: dataset === "Unavailable" ? trainingData : dataset },
+        ].map((item) => (
+          <div key={item.label} className="min-w-0">
+            <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">
+              {item.label}
+            </dt>
+            <dd className="mt-0.5 truncate text-[11.5px] text-[var(--gc-ink-2)]" title={item.value}>
+              {item.value}
+            </dd>
           </div>
+        ))}
+      </dl>
+
+      {data.length === 0 ? (
+        <div className="px-4 py-10 text-center">
+          <p className="text-[13.5px] text-[var(--gc-ink)]">No forecast to plot</p>
+          <Note className="mx-auto mt-1.5 max-w-[46ch]">
+            The demand series could not be sourced, so nothing is drawn. An empty axis is not a
+            forecast of zero.
+          </Note>
         </div>
-        <div className="hidden items-center gap-3.5 rounded-full border border-[#E8EDF5] bg-[#F8FAFD] px-3 py-1.5 text-[11px] font-bold text-[#64748B] sm:flex">
-          <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#334155]" />Historical</span>
-          <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#2563EB]" />Forecast</span>
-          <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#CBD5E1]" />90% interval</span>
-        </div>
-      </CardHeader>
-      <CardContent className="px-2 pb-5 pt-0 sm:px-6">
-        <div className="h-[530px]">
+      ) : (
+      <div className="gc-scroll-x px-1 pb-1 pt-3 sm:px-3">
+        <p className="pl-2 font-mono text-[9.5px] uppercase tracking-[0.08em] text-[var(--gc-ink-3)]">GW</p>
+        <div className="h-[400px] min-w-[560px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 30, right: 26, left: 4, bottom: 14 }}>
+            <AreaChart data={data} margin={{ top: 14, right: 26, left: 0, bottom: 8 }}>
               <defs>
-                <linearGradient id="confidenceBand" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#94A3B8" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="#94A3B8" stopOpacity={0.045} />
+                <linearGradient id="gc-confidence" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--gc-model)" stopOpacity={0.14} />
+                  <stop offset="100%" stopColor="var(--gc-model)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="#EEF2F7" strokeDasharray="3 10" vertical={false} />
+              <CartesianGrid stroke="var(--gc-rule)" vertical={false} />
               <XAxis
                 dataKey="timestamp"
-                axisLine={false}
+                axisLine={{ stroke: "var(--gc-rule-strong)" }}
                 tickLine={false}
                 ticks={axisTicks}
                 interval="preserveStartEnd"
-                minTickGap={48}
-                tick={{ fill: "#64748B", fontSize: 12, fontWeight: 700 }}
+                minTickGap={40}
+                tick={{ fill: "var(--gc-ink-3)", fontSize: 11 }}
                 tickFormatter={formatAxisTimestamp}
-                dy={14}
+                dy={8}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#64748B", fontSize: 12, fontWeight: 700 }}
-                domain={["dataMin - 2", "dataMax + 2"]}
-                tickFormatter={(value) => `${value} GW`}
-                width={58}
+                tick={{ fill: "var(--gc-ink-3)", fontSize: 11 }}
+                domain={domain}
+                ticks={ticks}
+                tickFormatter={(value: number) => `${value}`}
+                width={34}
               />
               <Tooltip
                 content={<ChartTooltip />}
-                cursor={{ stroke: "#94A3B8", strokeDasharray: "3 6", strokeWidth: 1.4 }}
+                cursor={{ stroke: "var(--gc-ink-3)", strokeWidth: 1 }}
                 wrapperStyle={{ outline: "none" }}
               />
               <Area
-                name="90% confidence"
+                name="90% interval"
                 dataKey="confidenceRange"
                 type="monotone"
                 stroke="none"
-                fill="url(#confidenceBand)"
+                fill="url(#gc-confidence)"
                 connectNulls
-                isAnimationActive
-                animationDuration={900}
-                animationEasing="ease-out"
+                isAnimationActive={false}
               />
               <Line
-                name="Historical demand"
+                name="Observed"
                 dataKey="demand"
                 type="monotone"
-                stroke="#334155"
-                strokeWidth={3}
+                stroke="var(--gc-observed)"
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 5.5, fill: "#334155", stroke: "#FFFFFF", strokeWidth: 3 }}
+                activeDot={{ r: 4, fill: "var(--gc-observed)", stroke: "var(--gc-surface)", strokeWidth: 2 }}
                 connectNulls={false}
-                isAnimationActive
-                animationDuration={860}
-                animationEasing="ease-out"
+                isAnimationActive={false}
               />
               <Line
-                name="Forecast demand"
+                name="Model forecast"
                 dataKey="forecast"
                 type="monotone"
-                stroke="#2563EB"
-                strokeWidth={3}
-                strokeDasharray="6 7"
+                stroke="var(--gc-model)"
+                strokeWidth={2}
+                strokeDasharray="5 4"
                 dot={false}
-                activeDot={{ r: 6, fill: "#2563EB", stroke: "#FFFFFF", strokeWidth: 3 }}
+                activeDot={{ r: 4, fill: "var(--gc-model)", stroke: "var(--gc-surface)", strokeWidth: 2 }}
                 connectNulls={false}
-                isAnimationActive
-                animationDuration={1040}
-                animationEasing="ease-out"
+                isAnimationActive={false}
               />
               {forecastStartTimestamp ? (
                 <ReferenceLine
                   x={forecastStartTimestamp}
-                  stroke="#94A3B8"
-                  strokeDasharray="4 6"
-                  label={{ value: "Forecast starts", position: "top", fill: "#64748B", fontSize: 12, fontWeight: 800 }}
-                />
-              ) : null}
-              {peakDemand !== null ? (
-                <ReferenceLine
-                  y={peakDemand}
-                  stroke="#D7DEE9"
-                  strokeDasharray="4 6"
-                  label={{ value: `Peak ${peakDemand.toFixed(1)} GW`, position: "insideTopRight", fill: "#64748B", fontSize: 12, fontWeight: 800 }}
+                  stroke="var(--gc-rule-strong)"
+                  label={{
+                    value: "Forecast starts",
+                    position: "top",
+                    fill: "var(--gc-ink-3)",
+                    fontSize: 10.5,
+                  }}
                 />
               ) : null}
               {peakTime && peakDemand !== null ? (
                 <ReferenceDot
                   x={peakTime}
                   y={peakDemand}
-                  r={7}
-                  fill="#2563EB"
-                  stroke="#FFFFFF"
-                  strokeWidth={3.5}
+                  r={4}
+                  fill="var(--gc-model)"
+                  stroke="var(--gc-surface)"
+                  strokeWidth={2}
+                  label={{
+                    value: `Peak ${peakDemand.toFixed(1)} GW`,
+                    position: "top",
+                    fill: "var(--gc-ink)",
+                    fontSize: 10.5,
+                  }}
                 />
               ) : null}
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      )}
+
+      {data.length === 0 ? null : (
+      <Note className="px-4 pb-3">
+        The forecast is produced recursively — each half-hour is fed back in as the next step&apos;s
+        input — so error compounds across the horizon. The interval is approximated from validation
+        RMSE and is not calibrated per step.
+      </Note>
+      )}
+
+      {data.length === 0 ? null : (
+      <ChartDataTable
+        summary="Forecast data table"
+        note="Every second hour of the plotted window."
+        columns={["Timestamp", "Observed GW", "Forecast GW", "90% interval"]}
+        rows={tableRows}
+      />
+      )}
+    </Panel>
+  )
+}
+
+function LegendKey({
+  color,
+  label,
+  dashed = false,
+  band = false,
+}: {
+  color: string
+  label: string
+  dashed?: boolean
+  band?: boolean
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <svg width="14" height="8" aria-hidden className="shrink-0">
+        {band ? (
+          <rect x="0" y="1" width="14" height="6" fill={color} opacity="0.16" />
+        ) : (
+          <line
+            x1="0"
+            y1="4"
+            x2="14"
+            y2="4"
+            stroke={color}
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeDasharray={dashed ? "4 3" : undefined}
+          />
+        )}
+      </svg>
+      <Eyebrow className="normal-case tracking-[0.04em]">{label}</Eyebrow>
+    </span>
   )
 }

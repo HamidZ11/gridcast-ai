@@ -5,5 +5,9 @@ pydantic-settings==2.10.1
 pandas==2.3.1
 numpy==2.3.1
 scikit-learn>=1.5
+# Required by /explain and by SHAP-based /feature-importance. Without it the API
+# degrades honestly: /explain returns 503 and feature importance falls back to
+# the estimator's native coefficients. Pulls numba + llvmlite (~157 MB installed).
+shap==0.48.0
 joblib==1.5.1
 python-dotenv==1.1.1

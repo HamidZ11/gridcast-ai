@@ -28,7 +28,7 @@ export function HelpTooltip({
             type="button"
             aria-label={label}
             className={cn(
-              "inline-grid size-5 shrink-0 cursor-help place-items-center rounded-full text-[#94A3B8] transition-colors duration-150 hover:text-[#475569] focus-visible:text-[#2563EB] focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
+              "inline-grid size-4 shrink-0 cursor-help place-items-center rounded-full text-[var(--gc-ink-3)] transition-colors duration-150 hover:text-[var(--gc-ink)]",
               className
             )}
           >
@@ -40,10 +40,10 @@ export function HelpTooltip({
             side={side}
             sideOffset={7}
             collisionPadding={12}
-            className="z-[100] max-w-[300px] rounded-[10px] border border-[#E8EDF5] bg-white px-3 py-2 text-left text-[12px] font-medium normal-case leading-5 tracking-normal text-[#475569] shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
+            className="z-[100] max-w-[300px] rounded-[6px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] px-2.5 py-1.5 text-left font-sans text-[12px] font-normal normal-case leading-[1.5] tracking-normal text-[var(--gc-ink-2)] shadow-[0_12px_32px_rgba(20,22,26,0.14)]"
           >
             {content}
-            <Tooltip.Arrow className="fill-white" width={10} height={5} />
+            <Tooltip.Arrow className="fill-[var(--gc-surface)]" width={10} height={5} />
           </Tooltip.Content>
         </Tooltip.Portal>
       </Tooltip.Root>

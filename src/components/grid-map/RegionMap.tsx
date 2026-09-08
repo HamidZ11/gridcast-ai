@@ -63,7 +63,7 @@ export function RegionMap({
   }, [regions])
 
   return (
-    <div className="relative h-[660px] overflow-hidden bg-[#F8FAFD] xl:h-[760px]">
+    <div className="relative h-[520px] overflow-hidden bg-[var(--gc-paper)] xl:h-[600px]">
       <svg
         viewBox="0 0 860 760"
         role="img"
@@ -90,10 +90,10 @@ export function RegionMap({
                 selected
               )}
               fillOpacity={selected ? 1 : hovered ? 0.97 : 0.9}
-              stroke={selected ? scale.at(-1) : hovered ? scale.at(-2) : "#FFFFFF"}
+              stroke={selected ? "var(--gc-ink)" : hovered ? "var(--gc-ink-2)" : "var(--gc-surface)"}
               strokeWidth={selected ? 2.8 : hovered ? 2 : 1.15}
               vectorEffect="non-scaling-stroke"
-              className="cursor-pointer outline-none transition-[fill,fill-opacity,stroke,stroke-width,filter] duration-200 ease-out focus:stroke-[#1D4ED8]"
+              className="cursor-pointer outline-none transition-[fill,fill-opacity,stroke,stroke-width,filter] duration-200 ease-out focus:stroke-[var(--gc-ink)] focus:stroke-2"
               style={{
                 filter: selected
                   ? "drop-shadow(0 5px 10px rgba(15, 23, 42, 0.24))"
@@ -118,7 +118,7 @@ export function RegionMap({
       </svg>
 
       {hoveredRegion ? (
-        <div className="pointer-events-none absolute right-4 top-4 z-20 rounded-[10px] border border-[#E8EDF5] bg-white/96 px-3 py-2.5 shadow-[0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur">
+        <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-[6px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] px-2.5 py-2 shadow-[0_12px_32px_rgba(20,22,26,0.14)]">
           <RegionTooltip region={hoveredRegion} layer={layer} />
         </div>
       ) : null}

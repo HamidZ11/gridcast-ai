@@ -1,106 +1,193 @@
 "use client"
 
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ChartDataTable } from "@/components/dashboard/ChartDataTable"
 import { HelpTooltip } from "@/components/ui/help-tooltip"
+import { Eyebrow, Note, Panel, PanelHeader, ProvenanceTag } from "@/components/ui/primitives"
 import type { DecompositionPoint } from "@/data/mockForecastAnalyticsData"
 
 type DecompositionChartProps = {
   data: DecompositionPoint[]
 }
 
-function MiniAxis() {
+/*
+ * Small multiples over one shared x axis - four panels, one measure each,
+ * rather than four scales on one plot. Every series here describes the observed
+ * signal, so all four use the observation blue / neutral ink. Orange is
+ * reserved for model output.
+ */
+
+const AXIS = { stroke: "var(--gc-rule)" }
+
+function MiniFrame({ children, label, help }: { children: React.ReactNode; label: string; help?: string }) {
   return (
-    <>
-      <CartesianGrid stroke="#EEF2F7" strokeDasharray="3 10" vertical={false} />
-      <XAxis dataKey="time" hide />
-      <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
-    </>
+    <div className="border-t border-[var(--gc-rule)] px-4 py-3 first:border-t-0">
+      <div className="mb-1.5 flex items-center gap-1">
+        <Eyebrow>{label}</Eyebrow>
+        {help ? <HelpTooltip content={help} /> : null}
+      </div>
+      <div className="h-[74px]">{children}</div>
+    </div>
+  )
+}
+
+function MiniTooltip({
+  active,
+  payload,
+  label,
+  unit,
+}: {
+  active?: boolean
+  payload?: { value: number; name: string }[]
+  label?: string
+  unit: string
+}) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="rounded-[5px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] px-2 py-1 font-mono text-[11px] tabular-nums text-[var(--gc-ink)] shadow-[0_8px_24px_rgba(20,22,26,0.12)]">
+      {label} · {payload[0].value.toFixed(1)} {unit}
+    </div>
   )
 }
 
 export function DecompositionChart({ data }: DecompositionChartProps) {
+  const rows = data.map((point) => [
+    point.time,
+    point.observed.toFixed(1),
+    point.trend.toFixed(1),
+    point.seasonal.toFixed(1),
+    point.residual.toFixed(1),
+  ])
+
   return (
-    <Card className="animate-enter-slow min-h-[560px] shadow-[0_26px_70px_rgba(15,23,42,0.075)]">
-      <CardHeader className="px-5 pt-5 md:px-6 md:pt-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.16em] text-[#94A3B8]">
-              Time-Series Decomposition
-            </p>
-            <h2 className="mt-1.5 text-[26px] font-semibold leading-8 tracking-tight text-[#0F172A]">
-              Demand signal components
-            </h2>
-          </div>
-          <div className="hidden items-center gap-3 rounded-full border border-[#E8EDF5] bg-[#F8FAFD] px-3 py-1.5 text-[11px] font-bold text-[#64748B] sm:flex">
-            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#334155]" />Observed</span>
-            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#2563EB]" />Trend</span>
-            <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#CBD5E1]" />Residual</span>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4 pb-5">
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">Observed demand</p>
-          <div className="h-[98px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="observed-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#334155" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#334155" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <MiniAxis />
-                <Area dataKey="observed" type="monotone" stroke="#334155" strokeWidth={2.2} fill="url(#observed-fill)" animationDuration={850} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">Linear trend</p>
-          <div className="h-[82px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-                <MiniAxis />
-                <Line dataKey="trend" type="monotone" stroke="#2563EB" strokeWidth={2.2} dot={false} animationDuration={850} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">Seasonal variance</p>
-          <div className="h-[82px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="seasonal-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563EB" stopOpacity={0.18} />
-                    <stop offset="100%" stopColor="#2563EB" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <MiniAxis />
-                <Area dataKey="seasonal" type="monotone" stroke="#2563EB" strokeWidth={2} fill="url(#seasonal-fill)" animationDuration={850} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        <div>
-          <p className="mb-2 flex items-center gap-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-            Unexplained residuals
-            <HelpTooltip content="The difference left after trend and repeating patterns are removed. Smaller residuals mean the known patterns explain demand more effectively." />
-          </p>
-          <div className="h-[78px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-                <MiniAxis />
-                <Bar dataKey="residual" fill="#CBD5E1" radius={[8, 8, 0, 0]} barSize={18} animationDuration={850} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <Panel className="animate-enter">
+      <PanelHeader
+        eyebrow="Decomposition"
+        title="Demand signal components"
+        note="Observed demand split into trend, repeating daily shape, and what is left over."
+        actions={<ProvenanceTag title="Fixed sample series shipped with the frontend, not a model output.">Illustrative</ProvenanceTag>}
+      />
+
+      <MiniFrame label="Observed demand · GW">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 6, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gc-observed-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--gc-observed)" stopOpacity={0.14} />
+                <stop offset="100%" stopColor="var(--gc-observed)" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={AXIS.stroke} vertical={false} />
+            <XAxis dataKey="time" hide />
+            <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+            <Tooltip content={<MiniTooltip unit="GW" />} cursor={{ stroke: "var(--gc-ink-3)", strokeWidth: 1 }} />
+            <Area
+              dataKey="observed"
+              type="monotone"
+              stroke="var(--gc-observed)"
+              strokeWidth={2}
+              fill="url(#gc-observed-fill)"
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </MiniFrame>
+
+      <MiniFrame label="Linear trend · GW">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 4, right: 6, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke={AXIS.stroke} vertical={false} />
+            <XAxis dataKey="time" hide />
+            <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+            <Tooltip content={<MiniTooltip unit="GW" />} cursor={{ stroke: "var(--gc-ink-3)", strokeWidth: 1 }} />
+            <Line
+              dataKey="trend"
+              type="monotone"
+              stroke="var(--gc-ink-2)"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </MiniFrame>
+
+      <MiniFrame label="Seasonal component · GW">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 6, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gc-seasonal-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--gc-observed)" stopOpacity={0.12} />
+                <stop offset="100%" stopColor="var(--gc-observed)" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={AXIS.stroke} vertical={false} />
+            <XAxis dataKey="time" hide />
+            <YAxis hide domain={["dataMin - 1", "dataMax + 1"]} />
+            <Tooltip content={<MiniTooltip unit="GW" />} cursor={{ stroke: "var(--gc-ink-3)", strokeWidth: 1 }} />
+            <Area
+              dataKey="seasonal"
+              type="monotone"
+              stroke="var(--gc-observed)"
+              strokeWidth={1.5}
+              fill="url(#gc-seasonal-fill)"
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </MiniFrame>
+
+      <MiniFrame
+        label="Unexplained residual · GW"
+        help="What is left after trend and the repeating daily shape are removed. Smaller residuals mean the known patterns explain more of the demand."
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 4, right: 6, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke={AXIS.stroke} vertical={false} />
+            <XAxis dataKey="time" hide />
+            <YAxis hide domain={["dataMin - 0.5", "dataMax + 0.5"]} />
+            <Tooltip content={<MiniTooltip unit="GW" />} cursor={{ fill: "var(--gc-surface-sunk)" }} />
+            <Bar dataKey="residual" fill="var(--gc-ink-3)" radius={[3, 3, 0, 0]} barSize={14} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </MiniFrame>
+
+      <div className="flex justify-between border-t border-[var(--gc-rule)] px-4 pb-1 pt-1.5" aria-hidden>
+        {data
+          .filter((_, index) => index % 3 === 0)
+          .map((point) => (
+            <span
+              key={point.time}
+              className="font-mono text-[9.5px] tabular-nums text-[var(--gc-ink-3)]"
+            >
+              {point.time}
+            </span>
+          ))}
+      </div>
+
+      <Note className="border-t border-[var(--gc-rule)] px-4 py-2.5">
+        This decomposition is a fixed sample series bundled with the frontend. It shows the shape of
+        the analysis, not a result computed from the NESO record.
+      </Note>
+
+      <ChartDataTable
+        summary="Decomposition data table"
+        columns={["Time", "Observed", "Trend", "Seasonal", "Residual"]}
+        rows={rows}
+      />
+    </Panel>
   )
 }

@@ -1,208 +1,169 @@
-import {
-  BrainCircuit,
-  CalendarClock,
-  CheckCircle2,
-  Clock3,
-  Database,
-  FileClock,
-  RefreshCw,
-} from "lucide-react"
-
 import { ApiStatusNotice } from "@/components/layout/ApiStatusNotice"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import {
+  DefinitionList,
+  Eyebrow,
+  Note,
+  PageHeader,
+  Panel,
+  PanelHeader,
+  ProvenanceTag,
+  StatusChip,
+} from "@/components/ui/primitives"
 import type { JobStatus } from "@/data/mockSchedulesData"
-import { cn } from "@/lib/utils"
 import { getSchedulesPageData } from "@/lib/page-data"
 
-const overviewIcons = [Clock3, CalendarClock, BrainCircuit, Database]
-
-function statusClasses(status: JobStatus) {
-  if (status === "Completed") return "border-[#A7F3D0] bg-[#ECFDF5] text-[#047857]"
-  if (status === "Monitoring") return "border-[#BFDBFE] bg-[#EFF6FF] text-[#2563EB]"
-  return "border-[#E8EDF5] bg-[#F8FAFD] text-[#64748B]"
+function statusTone(status: JobStatus) {
+  if (status === "Completed") return "ok" as const
+  if (status === "Monitoring") return "neutral" as const
+  return "neutral" as const
 }
 
 export default async function SchedulesPage() {
   const { overview, jobs, retraining, refreshTimeline, notice } = await getSchedulesPageData()
 
   return (
-    <main className="mx-auto w-full max-w-[1880px] px-5 py-5 md:px-8 lg:px-10 lg:py-6 2xl:px-12">
-      <header className="animate-enter">
-        <p className="text-[11px] font-bold uppercase leading-4 tracking-[0.18em] text-[#64748B]">
-          Operations
-        </p>
-        <h1 className="mt-1 text-[40px] font-semibold leading-[0.98] tracking-tight text-[#0F172A]">
-          Schedules
-        </h1>
-        <p className="mt-2.5 max-w-3xl text-[15px] font-medium leading-6 text-[#64748B]">
-          Forecast jobs, retraining cadence, dataset refreshes, and model operations.
-        </p>
-      </header>
+    <main className="mx-auto w-full max-w-[1600px] px-4 py-4 md:px-6 lg:px-8">
+      <PageHeader
+        eyebrow="Operations"
+        title="Runs and cadence"
+        description="What has run, what is due, and which of these values are real backend readings."
+        actions={<ProvenanceTag title="Rows marked MOCK OPS are placeholders held in the frontend, because no scheduler backs them yet.">Mock ops where marked</ProvenanceTag>}
+      />
 
       {notice ? <ApiStatusNotice message={notice} /> : null}
 
-      <section className="mt-4 grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        {overview.map((item, index) => {
-          const Icon = overviewIcons[index]
-
-          return (
-            <Card key={item.label} className="min-h-[130px]">
-              <CardContent className="flex h-full items-start justify-between gap-4 px-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[11px] font-semibold text-[#64748B]">{item.label}</p>
-                    {item.source === "operations mock" ? (
-                      <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">Mock ops</span>
-                    ) : null}
-                  </div>
-                  <p className="mt-2 text-[17px] font-semibold leading-6 tracking-tight text-[#0F172A]">{item.value}</p>
-                  <p className="mt-2 text-[11px] font-medium leading-4 text-[#94A3B8]">{item.detail}</p>
-                </div>
-                <div className="grid size-9 shrink-0 place-items-center rounded-[11px] bg-[#F3F6FB] text-[#64748B]">
-                  <Icon className="size-4" />
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+      <section
+        aria-label="Run status"
+        className="mt-4 grid divide-y divide-[var(--gc-rule)] rounded-[8px] border border-[var(--gc-rule-strong)] bg-[var(--gc-surface)] sm:grid-cols-2 sm:divide-y-0 sm:[&>*:nth-child(n+3)]:border-t sm:[&>*:nth-child(n+3)]:border-[var(--gc-rule)] sm:[&>*:nth-child(even)]:border-l sm:[&>*:nth-child(even)]:border-[var(--gc-rule)] xl:grid-cols-4 xl:[&>*:not(:first-child)]:border-l xl:[&>*:not(:first-child)]:border-[var(--gc-rule)] xl:[&>*:nth-child(n+3)]:border-t-0"
+      >
+        {overview.map((item) => (
+          <div key={item.label} className="min-w-0 px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <Eyebrow>{item.label}</Eyebrow>
+              {item.source === "operations mock" ? <ProvenanceTag>Mock ops</ProvenanceTag> : null}
+            </div>
+            <p className="mt-2 font-mono text-[14px] leading-[1.35] tabular-nums text-[var(--gc-ink)]">
+              {item.value}
+            </p>
+            <p className="mt-1.5 text-[11.5px] leading-[1.45] text-[var(--gc-ink-3)]">{item.detail}</p>
+          </div>
+        ))}
       </section>
 
-      <section className="mt-3.5">
-        <Card className="animate-enter-slow">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 px-5 pt-5 md:px-6">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">
-                Forecast Jobs
-              </p>
-              <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-                Model operations queue
-              </h2>
-            </div>
-            <span className="rounded-full border border-[#E8EDF5] bg-[#F8FAFD] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-[#94A3B8]">
-              Operations mock where unavailable
-            </span>
-          </CardHeader>
-          <CardContent className="px-0 pb-2">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] border-collapse text-left text-[13px]">
-                <thead>
-                  <tr className="border-y border-[#E8EDF5] bg-[#F8FAFD] text-[10px] font-bold uppercase tracking-[0.14em] text-[#94A3B8]">
-                    <th className="px-6 py-2.5">Job</th>
-                    <th className="px-4 py-2.5">Type</th>
-                    <th className="px-4 py-2.5">Model</th>
-                    <th className="px-4 py-2.5">Started</th>
-                    <th className="px-4 py-2.5">Duration</th>
-                    <th className="px-6 py-2.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E8EDF5]">
-                  {jobs.map((job) => (
-                    <tr key={job.job} className="transition-colors hover:bg-[#FBFCFE]">
-                      <td className="px-6 py-3 font-semibold text-[#0F172A]">{job.job}</td>
-                      <td className="px-4 py-3 font-medium text-[#64748B]">{job.type}</td>
-                      <td className="px-4 py-3 font-medium text-[#64748B]">{job.model}</td>
-                      <td className="px-4 py-3 font-medium tabular-nums text-[#64748B]">{job.started}</td>
-                      <td className="px-4 py-3 font-medium tabular-nums text-[#64748B]">{job.duration}</td>
-                      <td className="px-6 py-3">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-                            statusClasses(job.status)
-                          )}
-                        >
-                          {job.status === "Completed" ? <CheckCircle2 className="size-3.5" /> : null}
-                          {job.status}
-                        </span>
-                      </td>
-                    </tr>
+      <section className="mt-3">
+        <Panel>
+          <PanelHeader
+            eyebrow="Queue"
+            title="Model operations"
+            note="Start times come from the backend where a real artifact records one; the rest are placeholders."
+          />
+          <div className="gc-scroll-x">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-[var(--gc-rule-strong)]">
+                  {["Job", "Type", "Model", "Started", "Duration", "Status"].map((heading, index) => (
+                    <th
+                      key={heading}
+                      scope="col"
+                      className={`px-4 py-2 font-mono text-[10px] font-normal uppercase tracking-[0.07em] text-[var(--gc-ink-3)] ${
+                        index === 5 ? "text-right" : ""
+                      }`}
+                    >
+                      {heading}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((job) => (
+                  <tr key={job.job} className="border-b border-[var(--gc-rule)] last:border-b-0">
+                    <th scope="row" className="px-4 py-2.5 text-left text-[12.5px] font-normal text-[var(--gc-ink)]">
+                      {job.job}
+                    </th>
+                    <td className="px-4 py-2.5 text-[12.5px] text-[var(--gc-ink-2)]">{job.type}</td>
+                    <td className="px-4 py-2.5 text-[12.5px] text-[var(--gc-ink-2)]">{job.model}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 font-mono text-[12px] tabular-nums text-[var(--gc-ink-2)]">
+                      {job.started}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 font-mono text-[12px] tabular-nums text-[var(--gc-ink-3)]">
+                      {job.duration}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <StatusChip tone={statusTone(job.status)}>{job.status}</StatusChip>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       </section>
 
-      <section className="mt-3.5 grid gap-3.5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Card>
-          <CardHeader className="px-5 pt-5 md:px-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">
-              Retraining Schedule
-            </p>
-            <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-              Active model cadence
-            </h2>
-          </CardHeader>
-          <CardContent className="divide-y divide-[#E8EDF5]">
-            {retraining.map((item) => (
-              <div key={item.label} className="flex items-start justify-between gap-5 py-3 first:pt-1 last:pb-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-[12px] font-semibold text-[#64748B]">{item.label}</p>
-                  {item.source === "operations mock" ? (
-                    <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-[#94A3B8]">Mock ops</span>
-                  ) : null}
+      <section className="mt-3 grid items-start gap-3 xl:grid-cols-[0.85fr_1.15fr]">
+        <Panel>
+          <PanelHeader eyebrow="Retraining" title="Active model cadence" />
+          <div className="px-4 pb-3">
+            <DefinitionList
+              items={retraining.map((item) => ({
+                label: item.label,
+                value: (
+                  <span className="inline-flex flex-wrap items-baseline justify-end gap-1.5">
+                    {item.source === "operations mock" ? <ProvenanceTag>Mock ops</ProvenanceTag> : null}
+                    <span className="font-mono text-[12px] tabular-nums">{item.value}</span>
+                  </span>
+                ),
+              }))}
+            />
+          </div>
+        </Panel>
+
+        <Panel>
+          <PanelHeader eyebrow="Data" title="Artifact update sequence" />
+          <ol className="px-4 pb-3">
+            {refreshTimeline.map((item) => (
+              <li
+                key={item.label}
+                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b border-[var(--gc-rule)] py-2.5 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-[12.5px] text-[var(--gc-ink)]">{item.label}</p>
+                  <p className="mt-0.5 font-mono text-[11px] tabular-nums text-[var(--gc-ink-3)]">
+                    Last update {item.lastUpdated}
+                  </p>
                 </div>
-                <p className="max-w-[62%] text-right text-[13px] font-semibold leading-5 text-[#0F172A]">{item.value}</p>
-              </div>
+                <div className="text-right">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.07em] text-[var(--gc-ink-3)]">
+                    {item.cadence}
+                  </p>
+                  <p className="mt-0.5 text-[11.5px] text-[var(--gc-ink-2)]">Next: {item.nextAction}</p>
+                </div>
+              </li>
             ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="px-5 pt-5 md:px-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">
-              Data Refresh Timeline
-            </p>
-            <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-              Artifact update sequence
-            </h2>
-          </CardHeader>
-          <CardContent>
-            <div className="relative space-y-0 before:absolute before:bottom-4 before:left-[15px] before:top-3 before:w-px before:bg-[#E8EDF5]">
-              {refreshTimeline.map((item, index) => (
-                <div key={item.label} className="relative flex gap-3.5 pb-4 last:pb-0">
-                  <div className="z-[1] grid size-8 shrink-0 place-items-center rounded-[10px] border border-[#E8EDF5] bg-white text-[#64748B]">
-                    {index === refreshTimeline.length - 1 ? (
-                      <RefreshCw className="size-3.5" />
-                    ) : (
-                      <FileClock className="size-3.5" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1 pt-0.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-[13px] font-semibold text-[#0F172A]">{item.label}</p>
-                      <span className="text-[10px] font-semibold text-[#94A3B8]">{item.cadence}</span>
-                    </div>
-                    <p className="mt-1 text-[11px] font-medium text-[#64748B]">Last update: {item.lastUpdated}</p>
-                    <p className="mt-0.5 text-[11px] font-medium text-[#94A3B8]">Next: {item.nextAction}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          </ol>
+        </Panel>
       </section>
 
-      <section className="mt-3.5">
-        <Card>
-          <CardHeader className="px-5 pt-5 md:px-6">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">System Notes</p>
-            <h2 className="mt-1.5 text-[22px] font-semibold leading-7 tracking-tight text-[#0F172A]">
-              Current operating constraints
-            </h2>
-          </CardHeader>
-          <CardContent className="grid gap-2.5 md:grid-cols-3">
+      <section className="mt-3">
+        <Panel>
+          <PanelHeader eyebrow="Constraints" title="What limits the cadence" />
+          <ul className="px-4 pb-3">
             {[
-              "NESO data is published 21 days in arrears.",
-              "Weather features are not yet integrated.",
-              "Current inference uses lag and rolling demand features.",
+              "NESO publishes historic demand roughly 21 days in arrears, so there is no same-day data to ingest.",
+              "Weather features are not integrated, so a retrain would not change what the model can see.",
+              "Inference uses lag and rolling-demand features only, recomputed from the processed dataset.",
             ].map((note) => (
-              <div key={note} className="rounded-[15px] border border-[#E8EDF5] bg-[#F8FAFD] p-3.5">
-                <p className="text-[12px] font-medium leading-5 text-[#475569]">{note}</p>
-              </div>
+              <li
+                key={note}
+                className="border-b border-[var(--gc-rule)] py-2.5 text-[12.5px] leading-[1.55] text-[var(--gc-ink-2)] last:border-b-0"
+              >
+                {note}
+              </li>
             ))}
-          </CardContent>
-        </Card>
+          </ul>
+          <Note className="border-t border-[var(--gc-rule)] px-4 py-2.5">
+            No scheduler runs these jobs today. Cadences describe the intended operating model.
+          </Note>
+        </Panel>
       </section>
     </main>
   )

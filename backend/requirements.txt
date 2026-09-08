@@ -4,7 +4,13 @@ pydantic==2.11.7
 pydantic-settings==2.10.1
 pandas==2.3.1
 numpy==2.3.1
-scikit-learn>=1.5
+# Pinned to the version that pickled backend/models/model.pkl. Loading the
+# artifact under a different minor raises InconsistentVersionWarning; 1.9.0 was
+# verified to produce byte-identical forecasts, metrics, feature importance and
+# SHAP values, but the pin freezes the validated combination and stops silent
+# drift on the next rebuild. Validated with numpy 2.3.1, pandas 2.3.1,
+# scipy 1.18.1 on Python 3.12.7.
+scikit-learn==1.7.0
 # Required by /explain and by SHAP-based /feature-importance. Without it the API
 # degrades honestly: /explain returns 503 and feature importance falls back to
 # the estimator's native coefficients. Pulls numba + llvmlite (~157 MB installed).

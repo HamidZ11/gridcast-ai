@@ -492,6 +492,15 @@ Potential future work:
 
 ---
 
+# Rolling back a release
+
+`main` is deployed from, so roll back by adding a commit, never by rewriting
+history. Revert the redesign merge with `git revert -m 1 <merge-sha>`, or restore
+individual files from the `backup/pre-redesign-main` tag. Full procedure in
+[DESIGN.md](DESIGN.md#rolling-back-after-release).
+
+---
+
 # Portfolio Purpose
 
 GridCast AI was built as an end-to-end machine learning engineering project.

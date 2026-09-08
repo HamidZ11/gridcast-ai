@@ -102,3 +102,65 @@ Nav rail 208px expanded / 60px collapsed. Nav row 32px. Topbar 48px.
 Spacing scale 4 / 8 / 12 / 16 / 24 / 32. Table rows 40px single-line.
 Charts keep their own local horizontal scroll on narrow screens rather than
 shrinking axis type below 10px.
+
+
+## Rolling back after release
+
+The redesign lands as a merge commit on `main`. Roll back by **adding** a commit,
+never by rewriting published history — `main` is deployed from, and a force-push
+would break every clone and confuse the hosting integrations.
+
+### 1. Revert the merge (preferred)
+
+```bash
+git checkout main
+git pull --ff-only origin main
+
+# -m 1 keeps main's first parent, undoing everything the redesign brought in
+git revert -m 1 <merge-sha> --no-commit
+git revert --continue          # or: git commit
+git push origin main
+```
+
+Find the merge with `git log --oneline --merges -5`. Reverting a merge is a
+normal forward commit: the deployment redeploys the previous UI, history stays
+intact, and nothing anyone has cloned is invalidated.
+
+### 2. Restore a single file or directory
+
+When only part of the redesign is at fault, take the old copy without reverting
+the rest:
+
+```bash
+git checkout backup/pre-redesign-main -- src/app/dashboard/page.tsx
+git commit -m "Restore the previous overview page"
+git push origin main
+```
+
+### 3. Re-applying later
+
+`git revert` of a merge records that the merge's changes were undone, so simply
+re-merging the same branch will bring in nothing. To re-apply, revert the revert:
+
+```bash
+git revert <revert-sha>
+```
+
+### Reference points
+
+| Ref | Points at | Purpose |
+|---|---|---|
+| `backup/pre-redesign-main` (tag) | `c8cfda9` | The last pre-redesign commit |
+| `backup/pre-redesign-main-branch` | `c8cfda9` | Same, as a branch for checkout |
+| `landing-redesign` | the redesign work | Kept until the release is confirmed |
+
+Push the backup refs alongside `main` so they exist off this machine:
+
+```bash
+git push origin backup/pre-redesign-main            # the tag
+git push origin backup/pre-redesign-main-branch     # the branch
+```
+
+**Do not** use `git reset --hard` + `--force-with-lease` on `main`. It rewrites
+published history, breaks other clones, and can leave the deployment platform
+pointing at a commit that no longer exists.

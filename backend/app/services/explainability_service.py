@@ -8,13 +8,13 @@ import pandas as pd
 
 from app.core.config import settings
 from app.schemas.explainability import ExplainFeature, ExplainResponse
-from app.services.inference_service import (
-    FORECAST_PERIODS,
-    MW_PER_GW,
-    _load_processed_data,
+from app.services.inference_service import FORECAST_PERIODS, MW_PER_GW
+from app.services.model_cache import (
+    get_cached_dataset,
+    get_cached_forecast,
+    get_cached_metadata,
+    get_cached_model,
 )
-from app.services.model_cache import get_cached_metadata, get_cached_model
-from ml.inference.predict import recursive_forecast
 
 
 class ExplainabilityUnavailableError(RuntimeError):
@@ -60,13 +60,16 @@ def get_prediction_explanation(
         resolved_model_path = model_path or settings.model_artifact_path
         model = get_cached_model(model_path)
         metadata = get_cached_metadata(metadata_path)
-        data = _load_processed_data(dataset_path or settings.training_dataset_path)
+        resolved_dataset_path = dataset_path or settings.training_dataset_path
+        data = get_cached_dataset(resolved_dataset_path)
         feature_columns = metadata["feature_columns"]
-        timestamps, predictions, future_features = recursive_forecast(
+        timestamps, predictions, future_features = get_cached_forecast(
             model,
             data,
             feature_columns,
             periods=FORECAST_PERIODS,
+            model_path=model_path,
+            dataset_path=resolved_dataset_path,
         )
         selected_index = _resolve_forecast_index(
             timestamps,

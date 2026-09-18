@@ -28,9 +28,14 @@ from app.services.mock_data_service import (
     get_metrics as get_mock_metrics,
     get_model_info as get_mock_model_info,
 )
-from app.services.model_cache import get_cached_metadata, get_cached_model
+from app.services.model_cache import (
+    get_cached_dataset,
+    get_cached_forecast,
+    get_cached_metadata,
+    get_cached_model,
+)
 from ml.inference.model_loader import ModelMetadataPayload
-from ml.inference.predict import predict_demand, recursive_forecast
+from ml.inference.predict import predict_demand
 
 LOGGER = logging.getLogger(__name__)
 FORECAST_PERIODS = 96
@@ -40,16 +45,8 @@ NINETY_PERCENT_Z_SCORE = 1.645
 
 
 def _load_processed_data(dataset_path: Path) -> pd.DataFrame:
-    """Load processed rows in chronological order with parsed UTC timestamps."""
-    if not dataset_path.exists():
-        raise FileNotFoundError(f"Processed training dataset not found: {dataset_path}")
-
-    data = pd.read_csv(dataset_path)
-    if "timestamp" not in data.columns or "demand" not in data.columns:
-        raise ValueError("Processed dataset must contain timestamp and demand columns.")
-
-    data["timestamp"] = pd.to_datetime(data["timestamp"], utc=True, errors="raise")
-    return data.sort_values("timestamp").drop_duplicates("timestamp", keep="last")
+    """Kept for callers that import it here; delegates to the process-wide cache."""
+    return get_cached_dataset(dataset_path)
 
 
 def _build_future_features(
@@ -122,13 +119,15 @@ def get_forecast(
         resolved_dataset_path = dataset_path or settings.training_dataset_path
         model = get_cached_model(model_path)
         metadata = get_cached_metadata(metadata_path)
-        data = _load_processed_data(resolved_dataset_path)
-        timestamps, predictions_mw, _ = recursive_forecast(
+        data = get_cached_dataset(resolved_dataset_path)
+        timestamps, predictions_mw, _ = get_cached_forecast(
             model,
             data,
             metadata["feature_columns"],
             periods=FORECAST_PERIODS,
             frequency=FORECAST_FREQUENCY,
+            model_path=model_path,
+            dataset_path=resolved_dataset_path,
         )
 
         rmse_mw = float(metadata["metrics"].get("rmse", 0))
@@ -160,7 +159,7 @@ def get_forecast(
 def get_history(dataset_path: Path | None = None) -> HistoryResponse:
     """Return the latest 24 hours of processed NESO demand data."""
     try:
-        data = _load_processed_data(dataset_path or settings.training_dataset_path)
+        data = get_cached_dataset(dataset_path or settings.training_dataset_path)
         recent = data.tail(49)
         return HistoryResponse(
             source="NESO Historic Demand Data 2024",
@@ -261,7 +260,7 @@ def get_feature_importance(
         try:
             from ml.explainability.explainer import mean_absolute_shap_values
 
-            data = _load_processed_data(dataset_path or settings.training_dataset_path)
+            data = get_cached_dataset(dataset_path or settings.training_dataset_path)
             shap_importance = mean_absolute_shap_values(
                 resolved_model_path,
                 model,

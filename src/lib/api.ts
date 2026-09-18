@@ -42,14 +42,50 @@ function hasDataSource(value: Record<string, unknown>): boolean {
   return value.data_source === "artifact" || value.data_source === "fallback"
 }
 
+/*
+ * Caching policy.
+ *
+ * Every GET below reads from a frozen 2024 dataset and a saved model artifact;
+ * the responses only change when the backend is redeployed. Fetching them live
+ * on every render made each dashboard visit wait on the backend - and, because
+ * the backend sleeps on its free tier, made every visitor pay its ~60s cold
+ * start personally.
+ *
+ * These are Next.js server-side fetches, so `next.revalidate` uses the
+ * framework's Data Cache: a fresh entry is served without touching the backend,
+ * and a stale one is served immediately while it revalidates in the background.
+ * With no request-time APIs on the routes, the dashboard pages become
+ * statically rendered with time-based revalidation.
+ *
+ *   STATIC_DATA  the artifact-backed reads. Five minutes bounds how long a
+ *                snapshot taken while the backend was unreachable can persist.
+ *   STATUS       /health, which drives the "Backend unavailable" chrome and
+ *                should follow reality within a minute.
+ *   POST         /simulate depends on its body and is never cached.
+ */
+const STATIC_DATA_REVALIDATE_SECONDS = 300
+const STATUS_REVALIDATE_SECONDS = 60
+
+type CachePolicy = "static-data" | "status" | "never"
+
+function cacheOptions(policy: CachePolicy): Pick<RequestInit, "cache"> & { next?: { revalidate: number } } {
+  if (policy === "never") return { cache: "no-store" }
+  return {
+    next: {
+      revalidate: policy === "status" ? STATUS_REVALIDATE_SECONDS : STATIC_DATA_REVALIDATE_SECONDS,
+    },
+  }
+}
+
 async function fetchJson<T>(
   path: string,
   validate: Validator<T>,
-  init?: RequestInit
+  init?: RequestInit,
+  policy: CachePolicy = "static-data"
 ): Promise<ApiResult<T>> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
-      cache: "no-store",
+      ...cacheOptions(policy),
       headers: { Accept: "application/json" },
       ...init,
       ...(init?.body
@@ -234,7 +270,7 @@ function isModelInfoResponse(value: unknown): value is ModelInfoResponse {
 }
 
 export function getHealth(): Promise<ApiResult<HealthResponse>> {
-  return fetchJson("/health", isHealthResponse)
+  return fetchJson("/health", isHealthResponse, undefined, "status")
 }
 
 export function getForecast(): Promise<ApiResult<ForecastResponse>> {
@@ -244,10 +280,12 @@ export function getForecast(): Promise<ApiResult<ForecastResponse>> {
 export function simulateScenario(
   request: SimulationRequest
 ): Promise<ApiResult<SimulationResponse>> {
-  return fetchJson("/simulate", isSimulationResponse, {
-    method: "POST",
-    body: JSON.stringify(request),
-  })
+  return fetchJson(
+    "/simulate",
+    isSimulationResponse,
+    { method: "POST", body: JSON.stringify(request) },
+    "never"
+  )
 }
 
 export function getHistory(): Promise<ApiResult<HistoryResponse>> {

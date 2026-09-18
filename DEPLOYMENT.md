@@ -75,6 +75,36 @@ unreachable the app shows `Backend unavailable` in the topbar and sidebar, every
 figure reads `Unavailable`, and the forecast panel shows "No forecast to plot"
 rather than an empty axis. An outage is visible and honest, not broken-looking.
 
+## Caching (why the dashboard opens instantly, and what that costs)
+
+Every dashboard route except `/dashboard/scenarios` is now prerendered and
+served from Vercel's cache; the backend is only contacted when an entry needs
+revalidating, in the background, after a visitor has already been served.
+
+| Fetch | Revalidates after | Why |
+|---|---|---|
+| `/forecast` `/history` `/metrics` `/model` `/feature-importance` `/explain` | **300 s** | frozen dataset + saved model; only changes on a backend redeploy |
+| `/health` | **60 s** | drives the `Backend unavailable` chrome |
+| `POST /simulate` | never cached | depends on the request body |
+
+Consequences to know about:
+
+- **A visitor no longer pays Render's cold start** on the cached routes. The
+  first request after an entry expires is served stale and triggers the refetch
+  in the background.
+- **A backend redeploy shows up within 5 minutes**, not instantly.
+- **If the backend is down**, cached routes keep serving the last good render.
+  The status chip follows reality within ~60 s; figures fall back to
+  `Unavailable` once their 300 s entries lapse, and recover on the next
+  revalidation after the backend returns.
+- **`next build` now calls the backend** to prerender. If Render is asleep the
+  build waits for it (~60 s); if Render is down the pages prerender in the
+  `Unavailable` state and self-heal within 5 min of the first visit after it
+  recovers. Prefer building while the backend is up.
+- `/dashboard/scenarios` still renders per request because its initial render
+  POSTs the default scenario. It streams a skeleton first, but its data still
+  waits on the backend, including cold starts.
+
 ## Sequence
 
 ### Step 0 — push the backup refs first

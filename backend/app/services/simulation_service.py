@@ -22,10 +22,9 @@ from app.services.inference_service import (
     MW_PER_GW,
     NINETY_PERCENT_Z_SCORE,
     _build_future_features,
-    _load_processed_data,
     get_forecast,
 )
-from app.services.model_cache import get_cached_metadata, get_cached_model
+from app.services.model_cache import get_cached_dataset, get_cached_metadata, get_cached_model
 from ml.inference.predict import predict_demand
 
 LOGGER = logging.getLogger(__name__)
@@ -322,7 +321,7 @@ def simulate_scenario(
     try:
         model = get_cached_model(model_path)
         metadata = get_cached_metadata(metadata_path)
-        data = _load_processed_data(dataset_path or settings.training_dataset_path)
+        data = get_cached_dataset(dataset_path or settings.training_dataset_path)
         timestamps, baseline_features = _build_future_features(
             data, metadata["feature_columns"]
         )

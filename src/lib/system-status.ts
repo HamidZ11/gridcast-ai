@@ -26,14 +26,14 @@ export type SystemStatus = {
 }
 
 export async function getSystemStatus(): Promise<SystemStatus> {
-  // /model reads only the saved metadata, so a missing model file or dataset
-  // shows up as a fallback forecast instead. Pages that chart the forecast
-  // fetch the same URL, so there it is memoized; elsewhere it is served from
-  // the data cache (see lib/api.ts).
+  // Live reads, never cached: a cached entry would let the chrome report
+  // artifact data after the API has started serving fallback. /model reads
+  // only the saved metadata, so a missing model file or dataset shows up as a
+  // fallback forecast instead.
   const [healthResult, modelResult, forecastResult] = await Promise.all([
-    getHealth(),
-    getModelInfo(),
-    getForecast(),
+    getHealth({ live: true }),
+    getModelInfo({ live: true }),
+    getForecast({ live: true }),
   ])
 
   if (!healthResult.ok) {

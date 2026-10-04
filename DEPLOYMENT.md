@@ -75,35 +75,41 @@ unreachable the app shows `Backend unavailable` in the topbar and sidebar, every
 figure reads `Unavailable`, and the forecast panel shows "No forecast to plot"
 rather than an empty axis. An outage is visible and honest, not broken-looking.
 
-## Caching (why the dashboard opens instantly, and what that costs)
+## Caching (why the dashboard opens quickly, and what that costs)
 
-Every dashboard route except `/dashboard/scenarios` is now prerendered and
-served from Vercel's cache; the backend is only contacted when an entry needs
-revalidating, in the background, after a visitor has already been served.
+Dashboard routes render per request. The data-source status in the topbar and
+sidebar is read live, never from a cache, so it cannot say `Artifact data`
+while the API is serving fallback. It streams in after the page: a sleeping
+backend delays that label, not the page. The figures on each page still come
+from Next's Data Cache.
 
-| Fetch | Revalidates after | Why |
+| Fetch | Cached for | Why |
 |---|---|---|
 | `/forecast` `/history` `/metrics` `/model` `/feature-importance` `/explain` | **300 s** | frozen dataset + saved model; only changes on a backend redeploy |
-| `/health` | **60 s** | drives the `Backend unavailable` chrome |
-| `POST /simulate` | never cached | depends on the request body |
+| `/health` (About page) | **60 s** | backend health for pages that report it |
+| status check: `/health` `/model` `/forecast` | **never**, 8 s timeout | the data-source chrome must follow reality |
+| `POST /simulate` | never | depends on the request body |
 
 Consequences to know about:
 
-- **A visitor no longer pays Render's cold start** on the cached routes. The
-  first request after an entry expires is served stale and triggers the refetch
-  in the background.
-- **A backend redeploy shows up within 5 minutes**, not instantly.
-- **If the backend is down**, cached routes keep serving the last good render.
-  The status chip follows reality within ~60 s; figures fall back to
-  `Unavailable` once their 300 s entries lapse, and recover on the next
-  revalidation after the backend returns.
-- **`next build` now calls the backend** to prerender. If Render is asleep the
-  build waits for it (~60 s); if Render is down the pages prerender in the
-  `Unavailable` state and self-heal within 5 min of the first visit after it
-  recovers. Prefer building while the backend is up.
-- `/dashboard/scenarios` still renders per request because its initial render
-  POSTs the default scenario. It streams a skeleton first, but its data still
-  waits on the backend, including cold starts.
+- **Figures don't wait on the backend** when they have a cache entry. The first
+  request after an entry expires is served stale and refetches in the
+  background; a request with no entry at all waits on the backend.
+- **The status label reads `Checking data`** until the backend answers. If it
+  has not answered within 8 s (a cold start takes ~65 s), that request shows
+  `Backend unavailable`, which is true at that moment; the next visit after
+  the instance wakes shows the real state.
+- **A backend redeploy shows up in the status immediately** and in the figures
+  within 5 minutes.
+- **If the backend is down**, figures keep serving the last good entry until it
+  lapses, then fall back to `Unavailable`; the status says
+  `Backend unavailable` straight away.
+- **`next build` still fetches each page's figures** while it works out that
+  the dashboard routes are dynamic, which primes the Data Cache. Prefer
+  building while the backend is up.
+- `/dashboard/scenarios` POSTs the default scenario on its initial render. It
+  streams a skeleton first, but its data still waits on the backend, including
+  cold starts.
 
 ## Sequence
 

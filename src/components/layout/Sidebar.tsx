@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Suspense, use } from "react"
 import type { ComponentType } from "react"
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils"
 type SidebarProps = {
   collapsed: boolean
   mobileOpen: boolean
-  status: SystemStatus
+  status: Promise<SystemStatus>
   onCloseMobile: () => void
   onToggleCollapsed: () => void
 }
@@ -188,7 +189,30 @@ function SidebarLink({ active, collapsed, href, icon: Icon, label, onNavigate }:
  * What the app is actually serving. There is no live feed, so this reports the
  * artifact and the backend, and says so plainly when either is missing.
  */
-function DataSource({ status, collapsed }: { status: SystemStatus; collapsed: boolean }) {
+function DataSource({ status, collapsed }: { status: Promise<SystemStatus>; collapsed: boolean }) {
+  return (
+    <div className={cn("mt-3 border-t border-[var(--gc-rule)] pt-3", collapsed && "sr-only")}>
+      <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[var(--gc-ink-3)]">
+        Data source
+      </p>
+      {/* the status is read live and streams in; until then it claims nothing */}
+      <Suspense
+        fallback={
+          <p className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-[var(--gc-ink-3)]">
+            <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--gc-rule-strong)]" />
+            Checking data
+          </p>
+        }
+      >
+        <DataSourceStatus status={status} />
+      </Suspense>
+      <p className="mt-1 text-[11px] leading-[1.4] text-[var(--gc-ink-3)]">Historical record · not a live feed</p>
+    </div>
+  )
+}
+
+function DataSourceStatus({ status: pending }: { status: Promise<SystemStatus> }) {
+  const status = use(pending)
   const tone =
     status.source === "artifact"
       ? "bg-[var(--gc-ok)]"
@@ -197,10 +221,7 @@ function DataSource({ status, collapsed }: { status: SystemStatus; collapsed: bo
         : "bg-[var(--gc-bad)]"
 
   return (
-    <div className={cn("mt-3 border-t border-[var(--gc-rule)] pt-3", collapsed && "sr-only")}>
-      <p className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-[var(--gc-ink-3)]">
-        Data source
-      </p>
+    <>
       <p className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-[var(--gc-ink)]">
         <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tone)} />
         {status.label}
@@ -208,7 +229,6 @@ function DataSource({ status, collapsed }: { status: SystemStatus; collapsed: bo
       {status.dataset ? (
         <p className="mt-1 text-[11px] leading-[1.4] text-[var(--gc-ink-3)]">{status.dataset}</p>
       ) : null}
-      <p className="mt-1 text-[11px] leading-[1.4] text-[var(--gc-ink-3)]">Historical record · not a live feed</p>
-    </div>
+    </>
   )
 }

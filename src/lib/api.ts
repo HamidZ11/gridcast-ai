@@ -54,13 +54,14 @@ function hasDataSource(value: Record<string, unknown>): boolean {
  * These are Next.js server-side fetches, so `next.revalidate` uses the
  * framework's Data Cache: a fresh entry is served without touching the backend,
  * and a stale one is served immediately while it revalidates in the background.
- * With no request-time APIs on the routes, the dashboard pages become
- * statically rendered with time-based revalidation.
+ * The dashboard layout renders at request time so its data-source status can be
+ * read live (see the live reads below), but the figures on each page still come
+ * from this cache, so a visitor does not wait on the backend for them.
  *
  *   STATIC_DATA  the artifact-backed reads. Five minutes bounds how long a
  *                snapshot taken while the backend was unreachable can persist.
- *   STATUS       /health, which drives the "Backend unavailable" chrome and
- *                should follow reality within a minute.
+ *   STATUS       /health for pages that report backend health, following
+ *                reality within a minute.
  *   POST         /simulate depends on its body and is never cached.
  */
 const STATIC_DATA_REVALIDATE_SECONDS = 300
@@ -269,12 +270,26 @@ function isModelInfoResponse(value: unknown): value is ModelInfoResponse {
   )
 }
 
-export function getHealth(): Promise<ApiResult<HealthResponse>> {
-  return fetchJson("/health", isHealthResponse, undefined, "status")
+/*
+ * Live reads, for the data-source status only: never cached, so the chrome
+ * cannot report artifact data while the API is serving fallback. Bounded, so a
+ * sleeping backend reads as unavailable instead of holding the response open
+ * past the hosting platform's function limit.
+ */
+const LIVE_READ_TIMEOUT_MS = 8_000
+
+type ReadOptions = { live?: boolean }
+
+function liveRead(options: ReadOptions, policy: CachePolicy): [RequestInit | undefined, CachePolicy] {
+  return options.live ? [{ signal: AbortSignal.timeout(LIVE_READ_TIMEOUT_MS) }, "never"] : [undefined, policy]
 }
 
-export function getForecast(): Promise<ApiResult<ForecastResponse>> {
-  return fetchJson("/forecast", isForecastResponse)
+export function getHealth(options: ReadOptions = {}): Promise<ApiResult<HealthResponse>> {
+  return fetchJson("/health", isHealthResponse, ...liveRead(options, "status"))
+}
+
+export function getForecast(options: ReadOptions = {}): Promise<ApiResult<ForecastResponse>> {
+  return fetchJson("/forecast", isForecastResponse, ...liveRead(options, "static-data"))
 }
 
 export function simulateScenario(
@@ -312,6 +327,6 @@ export function getExplanation(
   return fetchJson(`/explain${query}`, isExplainResponse)
 }
 
-export function getModelInfo(): Promise<ApiResult<ModelInfoResponse>> {
-  return fetchJson("/model", isModelInfoResponse)
+export function getModelInfo(options: ReadOptions = {}): Promise<ApiResult<ModelInfoResponse>> {
+  return fetchJson("/model", isModelInfoResponse, ...liveRead(options, "static-data"))
 }

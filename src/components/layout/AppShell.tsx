@@ -40,7 +40,7 @@ function setSidebarPreference(collapsed: boolean) {
 export function AppShell({
   children,
   status,
-}: Readonly<{ children: ReactNode; status: SystemStatus }>) {
+}: Readonly<{ children: ReactNode; status: Promise<SystemStatus> }>) {
   const collapsed = useSyncExternalStore(
     subscribeSidebarPreference,
     getSidebarSnapshot,

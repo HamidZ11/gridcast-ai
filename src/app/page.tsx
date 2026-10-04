@@ -257,10 +257,11 @@ export default function LandingPage() {
               </table>
             </div>
             <p className="mt-4 max-w-[76ch] text-[12.5px] leading-[1.6] text-[var(--gc-ink-3)]">
-              Both baselines land within a few megawatts of each other. Random Forest edges the
-              average error; Linear Regression edges RMSE, and it is the artifact currently saved
-              and served. A difference this small is not a result — it is a reason to keep the model
-              interface swappable, which is how the backend is built.
+              Both baselines are scored on the same held-out split, and training keeps the one with
+              the lower RMSE: Linear Regression, by 0.15 MW (492.03 vs 492.18 MW). That is the
+              artifact saved and served. Random Forest is slightly better on MAE (374.4 vs 385.7 MW)
+              and MAPE (1.29% vs 1.36%). A gap this small doesn&apos;t pick a winner. It&apos;s why
+              the model interface is swappable.
             </p>
 
             {/* two readings of the same error */}

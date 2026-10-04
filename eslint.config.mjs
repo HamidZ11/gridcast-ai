@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "backend/.venv/**",
     "backend/models/**",
     "next-env.d.ts",
+    // Local agent tooling and installed skills, not part of the app.
+    ".claude/**",
   ]),
 ]);
 

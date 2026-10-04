@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridCast showcase frames</title>
+<!--
+  Every showcase frame, laid out at its exact output size. render.mjs serves this
+  folder, waits for data-ready, and screenshots each [data-frame] to out/<id>.png.
+  Open it yourself with `node render.mjs --serve` (add ?preview to fit the screen).
+  Rules: SHOWCASE.md. Inputs: captures/manifest.json from capture.mjs.
+-->
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("assets/fonts/Geist-Latin.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: block;
+  }
+
+  :root {
+    /* GridCast's own tokens (src/app/globals.css) */
+    --gc-paper: #f5f4f0;
+    --gc-ink: #14161a;
+    /* frame */
+    --canvas: #eceae3;
+    --window-line: #d4d1c6;
+    --dim: rgba(96, 93, 86, 0.4);
+    --lift-shadow: 0 30px 80px -20px rgba(20, 20, 20, 0.18), 0 2px 6px rgba(20, 20, 20, 0.05);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 48px;
+    background: #d8d6ce;
+    font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+    color: var(--gc-ink);
+  }
+
+  body.preview .frame { zoom: 0.4; }
+
+  .frame {
+    position: relative;
+    flex: none;
+    overflow: hidden;
+    background: var(--canvas);
+  }
+
+  /* the app window: a thin outline and a small radius, no chrome */
+  .window {
+    position: absolute;
+    overflow: hidden;
+    background: var(--gc-paper);
+    box-shadow: 0 0 0 1px var(--window-line);
+  }
+
+  /* sized and offset by windowNode() from the frame's view */
+  .window > img { position: absolute; }
+
+  /* focus treatment: the page behind the lifted card */
+  .window.dimmed > img { filter: blur(8px); }
+  .window.dimmed::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--dim);
+  }
+
+  .card {
+    position: absolute;
+    box-shadow: var(--lift-shadow);
+  }
+
+  .card > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .headline {
+    position: absolute;
+    margin: 0;
+    font-weight: 400;
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+    color: var(--gc-ink);
+  }
+</style>
+</head>
+<body>
+<script type="module">
+  if (new URLSearchParams(location.search).has("preview")) document.body.classList.add("preview")
+
+  const manifest = await (await fetch("captures/manifest.json")).json()
+
+  // App radius (Panel: rounded-[8px]) and the capture's device scale.
+  const APP_RADIUS = 8
+  const DPR = manifest.deviceScaleFactor
+
+  const SITE = { w: 2400, h: 1500 }
+  const OG = { w: 1200, h: 630 }
+
+  // 8% inset on a 16:10 canvas leaves a 16:10 window: exactly the 1440x900 viewport.
+  const insetWindow = ({ w, h }, inset = 0.08) => ({ x: w * inset, y: h * inset, w: w * (1 - 2 * inset), h: h * (1 - 2 * inset) })
+
+  /*
+   * Frames. `cards` are lifted out of `page`, sized as a multiple of their in-app
+   * CSS size, and laid out relative to the first card; the group is then centred
+   * in the window. Later cards sit in front.
+   */
+  const FRAMES = [
+    {
+      id: "site/01-hero",
+      size: SITE,
+      treatment: "full",
+      page: "landing",
+      // The landing is max-width centred, so the top-centre 1280x800 of the 1440x900
+      // capture is exactly what a 1280x800 window shows. Ending at 800 keeps the
+      // whole hero and stops before the next section's label and card edge.
+      view: { width: 1280, height: 800 },
+    },
+    {
+      id: "site/02-forecast",
+      size: SITE,
+      treatment: "focus",
+      page: "overview",
+      cards: [{ ref: "forecast", scale: 1.5 }],
+    },
+    {
+      id: "site/03-explainability",
+      size: SITE,
+      treatment: "focus",
+      page: "insights",
+      cards: [
+        { ref: "leans", scale: 1.42 },
+        // in front, overlapping only the padding right of the bar chart's 70% tick
+        { ref: "why", scale: 1.55, at: (prev) => ({ x: prev.w * 0.955, y: 150 }) },
+      ],
+    },
+    {
+      // A full view, not a focus frame: four dimmed frames in a row read as one
+      // beat repeated. The map and the selected-region panel already sit side by
+      // side in the app, so the unedited page shows both whole.
+      id: "site/04-regional",
+      size: SITE,
+      treatment: "full",
+      page: "gridmap",
+    },
+    {
+      id: "site/05-spread",
+      size: SITE,
+      treatment: "focus",
+      page: "forecast",
+      cards: [{ ref: "spread", scale: 1.9 }],
+    },
+    {
+      id: "og/01-hero",
+      size: OG,
+      treatment: "og",
+      page: "landing",
+      headline: "Half-hourly demand forecasting for Great Britain.",
+    },
+  ]
+
+  const el = (tag, className, style = {}) => {
+    const node = document.createElement(tag)
+    if (className) node.className = className
+    Object.assign(node.style, style)
+    return node
+  }
+  const px = (n) => `${Math.round(n * 100) / 100}px`
+  const img = (src) => {
+    const node = el("img")
+    node.src = src
+    node.alt = ""
+    return node
+  }
+
+  // `view` is the CSS region of the capture the window shows: top-centre, same 16:10.
+  function windowNode(rect, src, { radius, dimmed = false, view = manifest.viewport }) {
+    const win = el("div", dimmed ? "window dimmed" : "window", {
+      left: px(rect.x), top: px(rect.y), width: px(rect.w), height: px(rect.h), borderRadius: px(radius),
+    })
+    const scale = rect.w / view.width
+    const shot = img(`captures/${src}`)
+    Object.assign(shot.style, {
+      left: px(-((manifest.viewport.width - view.width) / 2) * scale),
+      top: "0px",
+      width: px(manifest.viewport.width * scale),
+      height: px(manifest.viewport.height * scale),
+    })
+    win.append(shot)
+    return win
+  }
+
+  async function naturalSize(src) {
+    const probe = img(src)
+    await probe.decode()
+    return { w: probe.naturalWidth, h: probe.naturalHeight }
+  }
+
+  async function liftCards(frame, win) {
+    const page = manifest.pages[frame.page]
+    const placed = []
+    for (const card of frame.cards) {
+      const src = `captures/${page.components[card.ref].file}`
+      const natural = await naturalSize(src)
+      const w = (natural.w / DPR) * card.scale
+      const h = (natural.h / DPR) * card.scale
+      const prev = placed.at(-1)
+      const offset = card.at && prev ? card.at(prev) : { x: 0, y: 0 }
+      placed.push({ src, scale: card.scale, w, h, x: (prev?.x ?? 0) + offset.x, y: (prev?.y ?? 0) + offset.y })
+    }
+    const left = Math.min(...placed.map((c) => c.x))
+    const top = Math.min(...placed.map((c) => c.y))
+    const right = Math.max(...placed.map((c) => c.x + c.w))
+    const bottom = Math.max(...placed.map((c) => c.y + c.h))
+    const dx = win.x + (win.w - (right - left)) / 2 - left
+    const dy = win.y + (win.h - (bottom - top)) / 2 - top
+    return placed.map((c) => ({ ...c, x: c.x + dx, y: c.y + dy }))
+  }
+
+  async function compose(frame) {
+    const node = el("section", "frame", { width: px(frame.size.w), height: px(frame.size.h) })
+    node.dataset.frame = frame.id
+    const page = manifest.pages[frame.page]
+
+    if (frame.treatment === "full" || frame.treatment === "focus") {
+      const win = insetWindow(frame.size)
+      const view = frame.view ?? manifest.viewport
+      const scale = win.w / view.width
+      const focus = frame.treatment === "focus"
+      // focus frames sit on the backdrop, the same view with the lifted cards taken out
+      node.append(windowNode(win, focus ? page.backdrop : page.viewport, { radius: 12, dimmed: focus, view }))
+      node.dataset.windowScale = scale.toFixed(3)
+
+      if (frame.treatment === "focus") {
+        for (const card of await liftCards(frame, win)) {
+          const lifted = el("div", "card", {
+            left: px(card.x), top: px(card.y), width: px(card.w), height: px(card.h),
+            borderRadius: px(APP_RADIUS * card.scale),
+          })
+          lifted.append(img(card.src))
+          node.append(lifted)
+        }
+      }
+    }
+
+    if (frame.treatment === "og") {
+      // Headline above the same landing window, which bleeds off the bottom edge
+      // in the gap between the evidence card and the stats rail.
+      const margin = 40
+      const width = frame.size.w - margin * 2
+      const scale = width / manifest.viewport.width
+      const cutAtCss = 615
+      const visible = cutAtCss * scale
+      const win = { x: margin, y: frame.size.h - visible, w: width, h: manifest.viewport.height * scale }
+      node.append(windowNode(win, page.viewport, { radius: 10 }))
+
+      // top chosen so the space above the cap height matches the gap below the baseline
+      const headline = el("h1", "headline", { left: px(margin), top: px(54), fontSize: px(42), fontWeight: "500", maxWidth: px(width) })
+      headline.textContent = frame.headline
+      node.append(headline)
+      node.dataset.windowScale = scale.toFixed(3)
+    }
+
+    return node
+  }
+
+  for (const frame of FRAMES) document.body.append(await compose(frame))
+
+  await document.fonts.ready
+  await Promise.all([...document.images].map((image) => image.decode()))
+  document.body.dataset.ready = "1"
+</script>
+</body>
+</html>

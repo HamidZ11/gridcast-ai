@@ -1,0 +1,12 @@
+{
+  "name": "gridcast-showcase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "render": "node render.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}

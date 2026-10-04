@@ -149,10 +149,19 @@
     animation: none;
   }
 
+  /*
+   * Transitions are switched off (0s), not shortened. transition-property
+   * defaults to `all`, so any non-zero duration here gives every element a
+   * transition it never had, and a measurement read straight after a style
+   * change sees the old value. Recharts sizes axis labels that way: with 0.01ms
+   * it measured 11px labels at the inherited 16px and dropped half of the
+   * AI Insights feature names as "overlapping".
+   */
   *,
   *::before,
   *::after {
-    transition-duration: 0.01ms !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }

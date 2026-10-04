@@ -15,6 +15,7 @@ from sklearn.linear_model import LinearRegression
 from app.core.config import settings
 from app.main import app
 from app.schemas.simulation import SimulationRequest
+from app.services.mock_data_service import DEPLOYED_FEATURE_INFLUENCE, DEPLOYED_MODEL
 from app.services.simulation_service import apply_scenario_to_features
 from ml.inference.model_loader import load_model, load_model_metadata
 from ml.inference.predict import recursive_forecast
@@ -395,7 +396,7 @@ def test_api_falls_back_when_artifacts_are_missing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """Missing model files return the stable mock contract rather than a 500."""
+    """Missing model files return a fallback describing the deployed model, not a 500."""
     monkeypatch.setattr(settings, "model_artifact_path", tmp_path / "missing.pkl")
     monkeypatch.setattr(
         settings, "model_metadata_path", tmp_path / "missing_metadata.json"
@@ -408,12 +409,61 @@ def test_api_falls_back_when_artifacts_are_missing(
     forecast_response = client.get("/forecast")
     metrics_response = client.get("/metrics")
     model_response = client.get("/model")
+    importance_response = client.get("/feature-importance")
 
     assert forecast_response.status_code == 200
     assert forecast_response.json()["points"]
+    assert forecast_response.json()["data_source"] == "fallback"
+
     assert metrics_response.status_code == 200
-    assert metrics_response.json()["model_name"] == "XGBoost Regressor"
-    assert metrics_response.json()["data_source"] == "fallback"
+    metrics = metrics_response.json()
+    assert metrics["model_name"] == "Linear Regression"
+    assert metrics["model_version"] == "trained-20260626"
+    mape = next(item for item in metrics["metrics"] if item["name"] == "MAPE")
+    assert mape["value"] == pytest.approx(DEPLOYED_MODEL["metrics"]["mape"])
+    assert metrics["data_source"] == "fallback"
+
     assert model_response.status_code == 200
-    assert model_response.json()["status"] == "Production"
-    assert model_response.json()["data_source"] == "fallback"
+    model = model_response.json()
+    assert model["name"] == "Linear Regression"
+    assert model["algorithm"] == "Linear regression baseline"
+    assert model["status"] == "Production"
+    assert model["feature_columns"] == TRAINING_FEATURE_COLUMNS
+    assert model["data_source"] == "fallback"
+
+    assert importance_response.status_code == 200
+    importance = importance_response.json()
+    assert importance["model_name"] == "Linear Regression"
+    assert {item["feature"] for item in importance["features"]} == set(
+        TRAINING_FEATURE_COLUMNS
+    )
+    assert importance["data_source"] == "fallback"
+
+    for response in (forecast_response, metrics_response, model_response, importance_response):
+        assert "XGBoost" not in response.text
+
+
+def test_fallback_copy_matches_saved_model_metadata() -> None:
+    """The pinned fallback copy cannot drift from the deployed model's metadata."""
+    saved = json.loads(settings.model_metadata_path.read_text(encoding="utf-8"))
+
+    assert DEPLOYED_MODEL == saved
+    assert set(DEPLOYED_FEATURE_INFLUENCE) == set(saved["feature_columns"])
+    assert sum(DEPLOYED_FEATURE_INFLUENCE.values()) == pytest.approx(100, abs=0.01)
+
+
+def test_feature_importance_fallback_never_reports_another_models_influence(
+    monkeypatch: pytest.MonkeyPatch,
+    inference_artifacts: tuple[Path, Path, Path],
+    tmp_path: Path,
+) -> None:
+    """With readable metadata for a different model, the fallback lists no features."""
+    configure_artifacts(monkeypatch, inference_artifacts)
+    monkeypatch.setattr(settings, "model_artifact_path", tmp_path / "missing.pkl")
+
+    payload = TestClient(app).get("/feature-importance").json()
+
+    assert payload["data_source"] == "fallback"
+    assert payload["model_name"] == "Linear Regression"
+    assert payload["generated_at"] == "2026-06-26T12:00:00+00:00"
+    assert payload["features"] == []

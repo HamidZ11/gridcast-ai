@@ -180,9 +180,13 @@ Leakage exclusions:
 
 Models:
 
-- Linear Regression
-- Random Forest Regressor
-- XGBoost Regressor, when local dependencies are available
+- Linear Regression and Random Forest Regressor are trained and scored on the
+  same chronological held-out split.
+- The model with the lowest held-out RMSE is saved as the active artifact. That
+  is currently Linear Regression: 492.03 MW RMSE against Random Forest's
+  492.18 MW, although Random Forest is slightly better on MAE and MAPE.
+- XGBoost Regressor is supported by the training code but was not part of the
+  current training run, so it does not appear in the saved metadata.
 
 Metrics:
 

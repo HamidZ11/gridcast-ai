@@ -84,8 +84,8 @@ the palette stays two hues wide.
 These are product requirements, not styling:
 
 1. **No live feed.** The app reads a frozen NESO 2024 file and a saved model
-   artifact. Chrome must say `Artifact data` / `Backend unavailable`, never
-   "Live".
+   artifact. Chrome must say `Artifact data`, `Fallback data` or
+   `Backend unavailable`, never "Live".
 2. **1.36% MAPE is one-step-ahead.** Wherever accuracy appears, it is labelled
    as one-step-ahead held-out error. It is never presented as verified accuracy
    for the recursive 48-hour horizon.

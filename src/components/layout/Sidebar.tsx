@@ -193,7 +193,7 @@ function DataSource({ status, collapsed }: { status: SystemStatus; collapsed: bo
     status.source === "artifact"
       ? "bg-[var(--gc-ok)]"
       : status.source === "fallback"
-        ? "bg-[var(--gc-rule-strong)]"
+        ? "bg-[var(--gc-warn)]"
         : "bg-[var(--gc-bad)]"
 
   return (

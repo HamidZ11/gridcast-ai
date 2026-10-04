@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -22,11 +23,10 @@ from app.schemas.responses import (
     ModelInfoResponse,
 )
 from app.services.mock_data_service import (
+    DEPLOYED_MODEL,
     get_feature_importance as get_mock_feature_importance,
     get_forecast as get_mock_forecast,
     get_history as get_mock_history,
-    get_metrics as get_mock_metrics,
-    get_model_info as get_mock_model_info,
 )
 from app.services.model_cache import (
     get_cached_dataset,
@@ -177,72 +177,84 @@ def get_history(dataset_path: Path | None = None) -> HistoryResponse:
         return get_mock_history()
 
 
+def _metrics_response(
+    metadata: ModelMetadataPayload, data_source: Literal["artifact", "fallback"]
+) -> MetricsResponse:
+    metrics = metadata["metrics"]
+    return MetricsResponse(
+        model_name=metadata["model_name"],
+        model_version=_model_version(metadata),
+        metrics=[
+            MetricItem(
+                name="MAE",
+                value=float(metrics["mae"]) / MW_PER_GW,
+                unit="GW",
+            ),
+            MetricItem(
+                name="RMSE",
+                value=float(metrics["rmse"]) / MW_PER_GW,
+                unit="GW",
+            ),
+            MetricItem(name="MAPE", value=float(metrics["mape"]), unit="%"),
+            MetricItem(name="R2", value=float(metrics["r2"])),
+        ],
+        data_source=data_source,
+    )
+
+
+def _model_info_response(
+    metadata: ModelMetadataPayload, data_source: Literal["artifact", "fallback"]
+) -> ModelInfoResponse:
+    limitations = [
+        *metadata["notes"],
+        "Forecast inference recursively updates lag and rolling-demand features from prior predictions.",
+        "Prediction intervals are approximated from validation RMSE and are not yet calibrated per horizon.",
+    ]
+    return ModelInfoResponse(
+        name=metadata["model_name"],
+        version=_model_version(metadata),
+        algorithm=_algorithm_description(metadata["model_name"]),
+        status="Production",
+        training_date=metadata["training_timestamp"][:10],
+        training_window="NESO 2024 historical record",
+        forecast_horizon_hours=48,
+        dataset=metadata["dataset"],
+        rows_trained=metadata["training_rows"],
+        selected_model=metadata["model_name"],
+        target=metadata["target"],
+        training_timestamp=metadata["training_timestamp"],
+        metrics=metadata["metrics"],
+        feature_columns=metadata["feature_columns"],
+        limitations=limitations,
+        all_model_metrics=metadata["all_model_metrics"],
+        row_count=metadata["row_count"],
+        training_rows=metadata["training_rows"],
+        test_rows=metadata["test_rows"],
+        metric_error_unit="MW",
+        data_source=data_source,
+    )
+
+
+# /metrics and /model only fall back when the saved metadata itself is unusable,
+# so their fallback describes the deployed model from its pinned copy.
+
+
 def get_metrics(metadata_path: Path | None = None) -> MetricsResponse:
     """Return saved validation metrics in frontend-compatible units."""
     try:
-        metadata = get_cached_metadata(metadata_path)
-        metrics = metadata["metrics"]
-        return MetricsResponse(
-            model_name=metadata["model_name"],
-            model_version=_model_version(metadata),
-            metrics=[
-                MetricItem(
-                    name="MAE",
-                    value=float(metrics["mae"]) / MW_PER_GW,
-                    unit="GW",
-                ),
-                MetricItem(
-                    name="RMSE",
-                    value=float(metrics["rmse"]) / MW_PER_GW,
-                    unit="GW",
-                ),
-                MetricItem(name="MAPE", value=float(metrics["mape"]), unit="%"),
-                MetricItem(name="R2", value=float(metrics["r2"])),
-            ],
-            data_source="artifact",
-        )
+        return _metrics_response(get_cached_metadata(metadata_path), "artifact")
     except (FileNotFoundError, OSError, KeyError, TypeError, ValueError) as error:
-        LOGGER.warning("Saved metrics unavailable; using mock fallback: %s", error)
-        return get_mock_metrics()
+        LOGGER.warning("Saved metrics unavailable; using fallback: %s", error)
+        return _metrics_response(DEPLOYED_MODEL, "fallback")
 
 
 def get_model_info(metadata_path: Path | None = None) -> ModelInfoResponse:
     """Return production model information sourced from saved metadata."""
     try:
-        metadata = get_cached_metadata(metadata_path)
-        limitations = [
-            *metadata["notes"],
-            "Forecast inference recursively updates lag and rolling-demand features from prior predictions.",
-            "Prediction intervals are approximated from validation RMSE and are not yet calibrated per horizon.",
-        ]
-        return ModelInfoResponse(
-            name=metadata["model_name"],
-            version=_model_version(metadata),
-            algorithm=_algorithm_description(metadata["model_name"]),
-            status="Production",
-            training_date=metadata["training_timestamp"][:10],
-            training_window="NESO 2024 historical record",
-            forecast_horizon_hours=48,
-            dataset=metadata["dataset"],
-            rows_trained=metadata["training_rows"],
-            selected_model=metadata["model_name"],
-            target=metadata["target"],
-            training_timestamp=metadata["training_timestamp"],
-            metrics=metadata["metrics"],
-            feature_columns=metadata["feature_columns"],
-            limitations=limitations,
-            all_model_metrics=metadata["all_model_metrics"],
-            row_count=metadata["row_count"],
-            training_rows=metadata["training_rows"],
-            test_rows=metadata["test_rows"],
-            metric_error_unit="MW",
-            data_source="artifact",
-        )
+        return _model_info_response(get_cached_metadata(metadata_path), "artifact")
     except (FileNotFoundError, OSError, KeyError, TypeError, ValueError) as error:
-        LOGGER.warning(
-            "Saved model metadata unavailable; using mock fallback: %s", error
-        )
-        return get_mock_model_info()
+        LOGGER.warning("Saved model metadata unavailable; using fallback: %s", error)
+        return _model_info_response(DEPLOYED_MODEL, "fallback")
 
 
 def get_feature_importance(
@@ -315,6 +327,6 @@ def get_feature_importance(
         )
     except (FileNotFoundError, OSError, TypeError, ValueError) as error:
         LOGGER.warning(
-            "Saved feature importance unavailable; using mock fallback: %s", error
+            "Saved feature importance unavailable; using fallback: %s", error
         )
-        return get_mock_feature_importance()
+        return get_mock_feature_importance(metadata_path)

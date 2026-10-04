@@ -16,7 +16,7 @@ export function Topbar({ status, onOpenSidebar }: TopbarProps) {
     status.source === "artifact"
       ? "bg-[var(--gc-ok)]"
       : status.source === "fallback"
-        ? "bg-[var(--gc-rule-strong)]"
+        ? "bg-[var(--gc-warn)]"
         : "bg-[var(--gc-bad)]"
 
   return (
@@ -43,7 +43,9 @@ export function Topbar({ status, onOpenSidebar }: TopbarProps) {
       >
         <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tone)} />
         <span className="hidden sm:inline">{status.label}</span>
-        <span className="sm:hidden">{status.source === "artifact" ? "Artifact" : "No data"}</span>
+        <span className="sm:hidden">
+          {status.source === "artifact" ? "Artifact" : status.source === "fallback" ? "Fallback" : "No data"}
+        </span>
       </p>
     </header>
   )

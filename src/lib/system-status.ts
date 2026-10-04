@@ -1,4 +1,4 @@
-import { getHealth, getModelInfo } from "@/lib/api"
+import { getForecast, getHealth, getModelInfo } from "@/lib/api"
 
 /**
  * What the application chrome is allowed to claim about its data.
@@ -12,12 +12,12 @@ export type SystemStatus = {
   backend: "operational" | "unavailable"
   /**
    * "artifact" - values come from the saved model and processed dataset.
-   * "fallback" - the API answered but could not load artifacts, so its numbers
-   *   are placeholders and the UI omits them.
+   * "fallback" - the API answered but could not load an artifact, so it is
+   *   serving fallback data, which the UI labels and does not show as results.
    * "unavailable" - the API did not answer.
    */
   source: "artifact" | "fallback" | "unavailable"
-  /** Short label for the chrome, e.g. "Artifact data". */
+  /** Short label for the chrome: "Artifact data", "Fallback data" or "Backend unavailable". */
   label: string
   /** One sentence of detail for a title attribute / tooltip. */
   detail: string
@@ -26,7 +26,15 @@ export type SystemStatus = {
 }
 
 export async function getSystemStatus(): Promise<SystemStatus> {
-  const [healthResult, modelResult] = await Promise.all([getHealth(), getModelInfo()])
+  // /model reads only the saved metadata, so a missing model file or dataset
+  // shows up as a fallback forecast instead. Pages that chart the forecast
+  // fetch the same URL, so there it is memoized; elsewhere it is served from
+  // the data cache (see lib/api.ts).
+  const [healthResult, modelResult, forecastResult] = await Promise.all([
+    getHealth(),
+    getModelInfo(),
+    getForecast(),
+  ])
 
   if (!healthResult.ok) {
     return {
@@ -40,15 +48,17 @@ export async function getSystemStatus(): Promise<SystemStatus> {
   }
 
   const model = modelResult.ok ? modelResult.data : null
-  const isArtifact = model?.data_source === "artifact"
+  const isArtifact =
+    model?.data_source === "artifact" &&
+    !(forecastResult.ok && forecastResult.data.data_source === "fallback")
 
   return {
     backend: "operational",
     source: isArtifact ? "artifact" : "fallback",
-    label: isArtifact ? "Artifact data" : "Artifacts unavailable",
+    label: isArtifact ? "Artifact data" : "Fallback data",
     detail: isArtifact
       ? `Served from the saved ${model?.name} artifact and the ${model?.dataset} file. Not a live feed.`
-      : "The API is running but could not load a trained artifact, so model-backed values are omitted.",
+      : "The API is running but could not load its saved artifacts, so it is serving fallback data. Model-backed values are not shown as results.",
     model: isArtifact ? `${model?.name} · ${model?.version}` : null,
     dataset: isArtifact ? (model?.dataset ?? null) : null,
   }

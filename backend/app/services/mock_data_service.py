@@ -1,5 +1,22 @@
-"""Mock service responses for early frontend/backend integration."""
+"""Fallback responses for when the saved artifacts cannot be loaded.
 
+Every response here carries data_source="fallback", and the dashboard labels it
+as such instead of presenting it as a result.
+
+Model-describing fallbacks describe the model that is actually deployed:
+- /metrics and /model only fall back when backend/models/model_metadata.json
+  cannot be read or is malformed, so they use DEPLOYED_MODEL, a copy of that
+  file. A test fails if the copy and the file disagree.
+- /feature-importance can fall back while the metadata is still readable (the
+  model file or the dataset is missing). It reads the metadata first and only
+  reports the recorded influences if they belong to that same model.
+
+/forecast and /history fall back to short illustrative series.
+"""
+
+from pathlib import Path
+
+from app.core.config import settings
 from app.schemas.responses import (
     FeatureImportanceItem,
     FeatureImportanceResponse,
@@ -8,10 +25,74 @@ from app.schemas.responses import (
     HealthResponse,
     HistoryPoint,
     HistoryResponse,
-    MetricItem,
-    MetricsResponse,
-    ModelInfoResponse,
 )
+from ml.inference.model_loader import ModelMetadataPayload, load_model_metadata
+
+# Copy of backend/models/model_metadata.json for the deployed model.
+DEPLOYED_MODEL: ModelMetadataPayload = {
+    "model_name": "Linear Regression",
+    "training_timestamp": "2026-06-26T14:51:52.212563+00:00",
+    "dataset": "NESO Historic Demand Data 2024",
+    "target": "ND / demand",
+    "row_count": 17232,
+    "metrics": {
+        "mae": 385.74935478020075,
+        "rmse": 492.0337404419855,
+        "mape": 1.3589508228085907,
+        "r2": 0.9936485819787304,
+    },
+    "all_model_metrics": {
+        "Linear Regression": {
+            "mae": 385.74935478020075,
+            "rmse": 492.0337404419855,
+            "mape": 1.3589508228085907,
+            "r2": 0.9936485819787304,
+        },
+        "Random Forest Regressor": {
+            "mae": 374.35927215945713,
+            "rmse": 492.18011326357015,
+            "mape": 1.2889088460136386,
+            "r2": 0.9936448025092236,
+        },
+    },
+    "feature_columns": [
+        "hour",
+        "day",
+        "month",
+        "day_of_week",
+        "is_weekend",
+        "demand_lag_1",
+        "demand_lag_48",
+        "demand_lag_336",
+        "demand_rolling_3",
+        "demand_rolling_48",
+        "demand_rolling_336",
+    ],
+    "training_rows": 13785,
+    "test_rows": 3447,
+    "notes": [
+        "Baseline model trained on engineered demand/time features only.",
+        "Weather features are not yet included.",
+        "TSD and ENGLAND_WALES_DEMAND are excluded to avoid target leakage.",
+    ],
+}
+
+# Share of mean absolute SHAP value (%) per feature for DEPLOYED_MODEL, as
+# served by /feature-importance from that artifact. Metadata stores feature
+# names but not their influence, so this is recorded rather than derived.
+DEPLOYED_FEATURE_INFLUENCE: dict[str, float] = {
+    "demand_lag_1": 65.179,
+    "demand_rolling_3": 31.9412,
+    "demand_rolling_48": 1.0879,
+    "demand_lag_336": 0.5987,
+    "demand_lag_48": 0.4077,
+    "day_of_week": 0.3564,
+    "hour": 0.2035,
+    "demand_rolling_336": 0.1386,
+    "is_weekend": 0.0501,
+    "month": 0.0312,
+    "day": 0.0056,
+}
 
 
 def get_health() -> HealthResponse:
@@ -20,7 +101,7 @@ def get_health() -> HealthResponse:
 
 
 def get_forecast() -> ForecastResponse:
-    """Return mock forecast points."""
+    """Return a short illustrative forecast series."""
     return ForecastResponse(
         horizon_hours=48,
         generated_at="2026-06-25T12:05:00Z",
@@ -66,9 +147,9 @@ def get_forecast() -> ForecastResponse:
 
 
 def get_history() -> HistoryResponse:
-    """Return mock historical demand points."""
+    """Return a short illustrative demand series."""
     return HistoryResponse(
-        source="National Grid ESO",
+        source="Illustrative fallback series",
         points=[
             HistoryPoint(timestamp="2026-06-25T00:00:00Z", demand_gw=31.8),
             HistoryPoint(timestamp="2026-06-25T02:00:00Z", demand_gw=29.6),
@@ -81,48 +162,35 @@ def get_history() -> HistoryResponse:
     )
 
 
-def get_metrics() -> MetricsResponse:
-    """Return mock production model metrics."""
-    return MetricsResponse(
-        model_name="XGBoost Regressor",
-        model_version="v1.3.0",
-        metrics=[
-            MetricItem(name="MAE", value=0.94, unit="GW"),
-            MetricItem(name="RMSE", value=1.28, unit="GW"),
-            MetricItem(name="MAPE", value=2.6, unit="%"),
-            MetricItem(name="R2", value=0.96),
-        ],
+def _is_deployed_model(metadata: ModelMetadataPayload) -> bool:
+    return (
+        metadata["model_name"] == DEPLOYED_MODEL["model_name"]
+        and metadata["training_timestamp"] == DEPLOYED_MODEL["training_timestamp"]
     )
 
 
-def get_feature_importance() -> FeatureImportanceResponse:
-    """Return mock feature-importance data."""
+def get_feature_importance(metadata_path: Path | None = None) -> FeatureImportanceResponse:
+    """Return the deployed model's recorded influences, or none for another model."""
+    try:
+        saved = load_model_metadata(metadata_path or settings.model_metadata_path)
+    except (OSError, ValueError):
+        saved = None
+
+    if saved is not None and not _is_deployed_model(saved):
+        # The saved metadata describes a model these influences were not
+        # recorded for. Report none rather than another model's.
+        return FeatureImportanceResponse(
+            model_name=saved["model_name"],
+            generated_at=saved["training_timestamp"],
+            features=[],
+        )
+
     return FeatureImportanceResponse(
-        model_name="XGBoost Regressor",
-        generated_at="2026-06-25T12:05:00Z",
+        model_name=DEPLOYED_MODEL["model_name"],
+        generated_at=DEPLOYED_MODEL["training_timestamp"],
         features=[
-            FeatureImportanceItem(feature="Previous day demand", importance=28),
-            FeatureImportanceItem(feature="Hour of day", importance=22),
-            FeatureImportanceItem(feature="Rolling average demand", importance=18),
-            FeatureImportanceItem(feature="Temperature", importance=12),
-            FeatureImportanceItem(feature="Day of week", importance=8),
-            FeatureImportanceItem(feature="Holiday flag", importance=5),
-            FeatureImportanceItem(feature="Humidity", importance=4),
-            FeatureImportanceItem(feature="Wind speed", importance=3),
+            FeatureImportanceItem(feature=feature, importance=importance)
+            for feature, importance in DEPLOYED_FEATURE_INFLUENCE.items()
         ],
-    )
-
-
-def get_model_info() -> ModelInfoResponse:
-    """Return mock model metadata."""
-    return ModelInfoResponse(
-        name="XGBoost Regressor",
-        version="v1.3.0",
-        algorithm="Gradient boosted decision trees",
-        status="Production",
-        training_date="2026-06-24",
-        training_window="Previous 24 months",
-        forecast_horizon_hours=48,
-        dataset="National Grid ESO",
-        rows_trained=876_000,
+        method="mean_absolute_shap",
     )

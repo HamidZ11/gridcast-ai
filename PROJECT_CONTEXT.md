@@ -31,7 +31,7 @@ The next stage is real data ingestion and ML training:
 - Add weather data ingestion
 - Build data cleaning and feature engineering pipeline
 - Train baseline models
-- Compare Linear Regression, Random Forest, and XGBoost
+- Compare Linear Regression and Random Forest on a chronological held-out split (done: Linear Regression is the saved model, selected on lowest RMSE; XGBoost is supported by the training code but was not part of the training run)
 - Add evaluation and SHAP explainability
 - Connect the frontend to the FastAPI backend
 

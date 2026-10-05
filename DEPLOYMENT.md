@@ -87,8 +87,9 @@ not claim it will.**
   65s cold start indicates — is replaced, so there is a gap.
 - A free service that has spun down is *already* returning nothing until the next
   request warms it, independently of deploys.
-- `render.yaml` in this repo sets `healthCheckPath: /health`, but that file is
-  **untracked**, so Render is only using it if the service was created from it.
+- `render.yaml` sets `healthCheckPath: /health`, but it names the service
+  `gridcast-ai-backend` while the live one is `gridcast-api`, so the live
+  service was probably not created from it and Render is not reading it.
   Check whether a health check is configured on the service.
 
 **Verify the actual behaviour rather than assuming it**: during the backend

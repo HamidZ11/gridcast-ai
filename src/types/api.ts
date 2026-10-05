@@ -1,6 +1,7 @@
 export type ApiResult<T> =
   | { ok: true; data: T }
-  | { ok: false; error: string }
+  /** `timedOut`: no answer within the read's timeout, as when the backend is waking. */
+  | { ok: false; error: string; timedOut?: boolean }
 
 export type HealthResponse = {
   status: string

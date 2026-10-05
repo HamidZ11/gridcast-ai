@@ -4,6 +4,7 @@ import { Suspense, use } from "react"
 import { Menu } from "lucide-react"
 
 import { AppSearch } from "@/components/layout/AppSearch"
+import { useDataSourceStatus } from "@/components/layout/useDataSourceStatus"
 import type { SystemStatus } from "@/lib/system-status"
 import { cn } from "@/lib/utils"
 
@@ -50,22 +51,29 @@ export function Topbar({ status, onOpenSidebar }: TopbarProps) {
   )
 }
 
+const SHORT_LABEL: Record<SystemStatus["source"], string> = {
+  artifact: "Artifact",
+  fallback: "Fallback",
+  waking: "Waking",
+  unavailable: "No data",
+}
+
 function TopbarStatus({ status: pending }: { status: Promise<SystemStatus> }) {
-  const status = use(pending)
+  const status = useDataSourceStatus(use(pending))
   const tone =
     status.source === "artifact"
       ? "bg-[var(--gc-ok)]"
       : status.source === "fallback"
         ? "bg-[var(--gc-warn)]"
-        : "bg-[var(--gc-bad)]"
+        : status.source === "waking"
+          ? "bg-[var(--gc-rule-strong)]"
+          : "bg-[var(--gc-bad)]"
 
   return (
     <p title={status.detail} className={STATUS_CLASS}>
       <span aria-hidden className={cn("h-1.5 w-1.5 shrink-0 rounded-full", tone)} />
       <span className="hidden sm:inline">{status.label}</span>
-      <span className="sm:hidden">
-        {status.source === "artifact" ? "Artifact" : status.source === "fallback" ? "Fallback" : "No data"}
-      </span>
+      <span className="sm:hidden">{SHORT_LABEL[status.source]}</span>
     </p>
   )
 }

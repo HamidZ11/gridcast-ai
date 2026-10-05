@@ -87,7 +87,7 @@ from Next's Data Cache.
 |---|---|---|
 | `/forecast` `/history` `/metrics` `/model` `/feature-importance` `/explain` | **300 s** | frozen dataset + saved model; only changes on a backend redeploy |
 | `/health` (About page) | **60 s** | backend health for pages that report it |
-| status check: `/health` `/model` `/forecast` | **never**, 8 s timeout | the data-source chrome must follow reality |
+| status check: `/health` `/model` `/forecast` | **never**; 8 s timeout, 4 s on rechecks | the data-source chrome must follow reality |
 | `POST /simulate` | never | depends on the request body |
 
 Consequences to know about:
@@ -96,14 +96,17 @@ Consequences to know about:
   request after an entry expires is served stale and refetches in the
   background; a request with no entry at all waits on the backend.
 - **The status label reads `Checking data`** until the backend answers. If it
-  has not answered within 8 s (a cold start takes ~65 s), that request shows
-  `Backend unavailable`, which is true at that moment; the next visit after
-  the instance wakes shows the real state.
+  has not answered within 8 s, which is what a Render cold start looks like
+  (~45-65 s), it reads `Waking backend` and the browser rechecks through
+  `/api/status` every 5 s for up to 90 s. It settles on the real state as soon
+  as the backend answers, and says `Backend unavailable` only if it is still
+  down after 90 s. The page keeps rendering from cache throughout.
 - **A backend redeploy shows up in the status immediately** and in the figures
   within 5 minutes.
 - **If the backend is down**, figures keep serving the last good entry until it
-  lapses, then fall back to `Unavailable`; the status says
-  `Backend unavailable` straight away.
+  lapses, then fall back to `Unavailable`. The status says
+  `Backend unavailable` straight away if the API refuses the connection, or
+  after the 90 s recheck window if it hangs.
 - **`next build` still fetches each page's figures** while it works out that
   the dashboard routes are dynamic, which primes the Data Cache. Prefer
   building while the backend is up.

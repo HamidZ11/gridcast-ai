@@ -6,6 +6,7 @@ import { Suspense, use } from "react"
 import type { ComponentType } from "react"
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 
+import { useDataSourceStatus } from "@/components/layout/useDataSourceStatus"
 import { aboutNavigationItem, navigationSections } from "@/lib/navigation"
 import type { SystemStatus } from "@/lib/system-status"
 import { cn } from "@/lib/utils"
@@ -212,13 +213,15 @@ function DataSource({ status, collapsed }: { status: Promise<SystemStatus>; coll
 }
 
 function DataSourceStatus({ status: pending }: { status: Promise<SystemStatus> }) {
-  const status = use(pending)
+  const status = useDataSourceStatus(use(pending))
   const tone =
     status.source === "artifact"
       ? "bg-[var(--gc-ok)]"
       : status.source === "fallback"
         ? "bg-[var(--gc-warn)]"
-        : "bg-[var(--gc-bad)]"
+        : status.source === "waking"
+          ? "bg-[var(--gc-rule-strong)]"
+          : "bg-[var(--gc-bad)]"
 
   return (
     <>

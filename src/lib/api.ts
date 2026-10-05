@@ -114,6 +114,7 @@ async function fetchJson<T>(
     return {
       ok: false,
       error: error instanceof Error ? error.message : "Backend is unavailable.",
+      timedOut: error instanceof Error && error.name === "TimeoutError",
     }
   }
 }
@@ -273,15 +274,16 @@ function isModelInfoResponse(value: unknown): value is ModelInfoResponse {
 /*
  * Live reads, for the data-source status only: never cached, so the chrome
  * cannot report artifact data while the API is serving fallback. Bounded, so a
- * sleeping backend reads as unavailable instead of holding the response open
- * past the hosting platform's function limit.
+ * sleeping backend reports a timeout instead of holding the response open past
+ * the hosting platform's function limit.
  */
 const LIVE_READ_TIMEOUT_MS = 8_000
 
-type ReadOptions = { live?: boolean }
+type ReadOptions = { live?: boolean; timeoutMs?: number }
 
 function liveRead(options: ReadOptions, policy: CachePolicy): [RequestInit | undefined, CachePolicy] {
-  return options.live ? [{ signal: AbortSignal.timeout(LIVE_READ_TIMEOUT_MS) }, "never"] : [undefined, policy]
+  if (!options.live) return [undefined, policy]
+  return [{ signal: AbortSignal.timeout(options.timeoutMs ?? LIVE_READ_TIMEOUT_MS) }, "never"]
 }
 
 export function getHealth(options: ReadOptions = {}): Promise<ApiResult<HealthResponse>> {

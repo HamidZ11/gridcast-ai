@@ -5,12 +5,45 @@ Two independent platforms deploy from this repository:
 | Platform | Deploys | From | Trigger |
 |---|---|---|---|
 | **Vercel** | frontend (`/`, `/dashboard`) | repo root | **push to `main`** — confirmed: `vercel[bot]` production deployment and a `Vercel` commit status |
-| **Render** | backend (`gridcast-api`) | `backend/` | push to `main` **if Auto-Deploy is On**, otherwise manual |
+| **Render** | backend (`gridcast-api`) | `backend/` | push to `main` that changes `backend/`, through `.github/workflows/deploy-backend.yml` and the service's deploy hook (keep Render's Auto-Deploy off); also runnable by hand from the Actions tab |
 
 Live URLs: `https://gridcast-ai-sooty.vercel.app` and `https://gridcast-api.onrender.com`.
 
 **Pushing `main` always deploys the frontend.** Turning Render's Auto-Deploy off
 does not prevent that — it only decouples the backend.
+
+## GitHub Actions
+
+### Render deploy hook
+
+`deploy-backend.yml` POSTs to the Render deploy hook in the repository secret
+`RENDER_DEPLOY_HOOK_URL`, and fails with a clear error if the secret is not set.
+
+1. Render Dashboard → the `gridcast-api` service → **Settings** → **Deploy
+   Hook** (under Build & Deploy). Copy the URL
+   (`https://api.render.com/deploy/srv-…?key=…`). Treat it as a secret: anyone
+   with it can trigger a deploy. Regenerate it there if it leaks.
+2. While on that page, set **Auto-Deploy** to **Off**, or a backend push
+   deploys twice.
+3. GitHub → the repository → **Settings** → **Secrets and variables** →
+   **Actions** → **New repository secret**. Name `RENDER_DEPLOY_HOOK_URL`,
+   value the hook URL. Or from a terminal:
+   `gh secret set RENDER_DEPLOY_HOOK_URL --repo HamidZ11/gridcast-ai` (it
+   prompts for the value, which keeps it out of shell history).
+
+### Keeping the backend warm
+
+`keep-warm.yml` GETs `https://gridcast-api.onrender.com/health` every 10
+minutes (90 s timeout) so the free instance never reaches its 15-minute
+spin-down. Run it by hand from the Actions tab or with
+`gh workflow run keep-warm.yml`. Two limits:
+
+- GitHub runs schedules on a best-effort basis; under load a run can be
+  delayed or skipped, so an occasional cold start is still possible. The
+  status chrome handles that (`Waking backend`).
+- An always-on free instance uses about 720-744 of the 750 free instance hours
+  Render gives a workspace each month, leaving almost none for other free
+  services in the same workspace.
 
 ## Before you start: two things must be true
 
@@ -126,6 +159,11 @@ git push origin backup/pre-redesign-main-branch     # branch -> c8cfda9
 ```
 
 ### Step 1 — decide the order
+
+> With `deploy-backend.yml` in place (and Auto-Deploy off), any push that
+> changes `backend/` also deploys the backend. To sequence a release, push the
+> frontend change first and the backend change separately, or deploy the
+> backend by running the workflow from the Actions tab when ready.
 
 **If Render Auto-Deploy is OFF (recommended for the first release):**
 

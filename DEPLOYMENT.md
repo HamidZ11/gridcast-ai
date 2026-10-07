@@ -33,17 +33,26 @@ does not prevent that — it only decouples the backend.
 
 ### Keeping the backend warm
 
-`keep-warm.yml` GETs `https://gridcast-api.onrender.com/health` every 10
-minutes (90 s timeout) so the free instance never reaches its 15-minute
-spin-down. Run it by hand from the Actions tab or with
-`gh workflow run keep-warm.yml`. Two limits:
+Render's free instance spins down after 15 minutes without traffic, and a cold
+start takes about a minute.
 
-- GitHub runs schedules on a best-effort basis; under load a run can be
-  delayed or skipped, so an occasional cold start is still possible. The
-  status chrome handles that (`Waking backend`).
-- An always-on free instance uses about 720-744 of the 750 free instance hours
-  Render gives a workspace each month, leaving almost none for other free
-  services in the same workspace.
+`keep-warm.yml` is scheduled every 8 minutes to GET
+`https://gridcast-api.onrender.com/health` (80 s per attempt, 2 retries). Run it
+by hand from the Actions tab or with `gh workflow run keep-warm.yml`.
+
+**The GitHub schedule cannot keep the instance warm on its own.** GitHub runs
+schedules on a best-effort basis and drops most high-frequency runs: from
+5 to 7 October 2026 the 10-minute schedule ran 10 times in 54 hours (about 324
+were due), 3.6 to 8 hours apart. Treat the workflow as a backup.
+
+To actually keep the backend warm, point a free external uptime monitor (for
+example UptimeRobot, HTTP monitor, 5-minute interval) at the `/health` URL
+above. Between those pings, a cold start shows as `Waking backend` in the
+status chrome rather than an error.
+
+An always-on free instance uses about 720-744 of the 750 free instance hours
+Render gives a workspace each month, leaving almost none for other free
+services in the same workspace.
 
 ## Before you start: two things must be true
 

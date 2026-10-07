@@ -1,12 +1,9 @@
-# Pings the production backend so Render's free instance does not spin down
-# (it sleeps after 15 minutes without traffic, and a cold start takes about a
-# minute). The URL is the frontend's production NEXT_PUBLIC_API_BASE_URL, as
-# inlined in the live Vercel bundle and recorded in DEPLOYMENT.md.
+# Keeps the Render production backend warm.
 name: Keep backend warm
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/8 * * * *"
   workflow_dispatch:
 
 permissions: {}
@@ -14,12 +11,20 @@ permissions: {}
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
+
     steps:
       - name: GET /health
         env:
           BACKEND_URL: https://gridcast-api.onrender.com
-        run: >-
-          curl --fail --silent --show-error --max-time 90
-          --write-out '\nHTTP %{http_code} in %{time_total}s\n'
-          "$BACKEND_URL/health"
+        run: |
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --retry 2 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --max-time 80 \
+            --write-out '\nHTTP %{http_code} in %{time_total}s\n' \
+            "$BACKEND_URL/health"
